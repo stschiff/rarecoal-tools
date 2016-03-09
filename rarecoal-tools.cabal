@@ -15,8 +15,7 @@ library
   exposed-modules:     Rarecoal.RareAlleleHistogram, Rarecoal.FreqSumEntry
   hs-source-dirs:      src
   build-depends:       base, containers, errors, text, attoparsec, pipes-text, transformers,
-                       pipes-attoparsec, vector, data-memocombinators
-                       split, MissingH, hslogger
+                       pipes-attoparsec, vector, data-memocombinators, split, MissingH, hslogger
   default-language:    Haskell2010
   ghc-options:         -O
 

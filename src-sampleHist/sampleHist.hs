@@ -1,6 +1,5 @@
 {-# LANGUAGE BangPatterns #-}
 
-import Rarecoal.Core (choose)
 import Rarecoal.RareAlleleHistogram (readHistogramFromHandle, showHistogram, 
                                      RareAlleleHistogram(..), SitePattern(..))
 
@@ -85,6 +84,10 @@ sampleWithoutReplacement n k howMany = go n k howMany 0
             return ret
         else do
             go (n' - 1) (k' - 1) (howMany' - 1) (ret + 1)
+
+choose :: Int -> Int -> Double
+choose _ 0 = 1
+choose n k = product [fromIntegral (n + 1 - j) / fromIntegral j | j <- [1..k]]
         
 bernoulli :: Double -> IO Bool
 bernoulli p = (<p) <$> randomIO 
