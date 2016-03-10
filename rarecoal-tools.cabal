@@ -131,3 +131,11 @@ executable ms2hist
                         text
   default-language:     Haskell2010
   ghc-options:          -with-rtsopts=-K100m
+
+executable concatFreqSum
+  main-is:              concatFreqSum.hs
+  hs-source-dirs:       src-concatFreqSum
+  build-depends:        base, pipes, transformers, optparse-applicative, rarecoal-tools, errors,
+                        managed
+  default-language:     Haskell2010
+ 

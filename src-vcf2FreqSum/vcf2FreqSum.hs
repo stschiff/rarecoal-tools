@@ -9,7 +9,6 @@ import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.State.Strict (runStateT)
 import qualified Data.Attoparsec.Text as A
 import qualified Data.Text as T
-import qualified Data.Text.IO as T
 import qualified Options.Applicative as OP
 import Pipes (next, Producer)
 import Pipes.Attoparsec (parsed, parse)

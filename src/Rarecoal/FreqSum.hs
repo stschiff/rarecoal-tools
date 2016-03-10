@@ -19,7 +19,7 @@ import System.IO (Handle)
 data FreqSumHeader = FreqSumHeader {
     fshNames :: [String],
     fshCounts :: [Int]
-}
+} deriving (Eq)
 
 instance Show FreqSumHeader where
     show (FreqSumHeader names nCounts) = "#CHROM\tPOS\tREF\tALT\t" ++ intercalate "\t" tuples
