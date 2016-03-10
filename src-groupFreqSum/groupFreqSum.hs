@@ -1,40 +1,50 @@
-import qualified Options.Applicative as OP
-import qualified Pipes.Text.IO as PT
-import Data.Monoid ((<>))
-import Pipes (runEffect, for, lift)
-import Pipes.Attoparsec (parsed)
-import Control.Error (runScript, throwE, tryRight, assertErr, scriptIO)
-import Rarecoal.FreqSumEntry (FreqSumEntry(..), parseFreqSumEntry)
-import Data.List.Split (splitPlaces)
-import Control.Monad ((>=>))
+import Rarecoal.FreqSum (FreqSumEntry(..), parseFreqSum, FreqSumHeader(..), printFreqSum)
 
-data MyOpts = MyOpts [Int] Bool
+import Control.Error (runScript, tryRight, assertErr)
+import Data.List.Split (splitPlaces)
+import Data.Monoid ((<>))
+import qualified Options.Applicative as OP
+import Pipes ((>->))
+import qualified Pipes.Prelude as P
+import System.IO (stdin)
+
+data MyOpts = MyOpts [Int] Bool [String]
 
 main :: IO ()
 main = OP.execParser opts >>= runWithOptions
   where
-    opts = OP.info (OP.helper <*> parser) (OP.progDesc "This tool merges samples or groups into larger groups, adding up the allele counts")
+    opts = OP.info (OP.helper <*> parser) (OP.progDesc "This tool merges samples or groups into \
+                        \larger groups, adding up the allele counts. It reads from stdin")
 
 parser :: OP.Parser MyOpts
-parser = MyOpts <$> OP.option OP.auto (OP.short 'n' <> OP.long "nVec" <> OP.metavar "nVec" <> OP.help "comma-separated list of numbers that \
-                                       \specify how to join sample or groups, surrounded by square brackets. Example: -n [20,20,1] specifies \
-                                       \that you want to merge the first twenty samples/groups into one, and sample 21 through 40, and then \
+parser = MyOpts <$> OP.option OP.auto (OP.short 'g' <> OP.long "groups" <>
+                                       OP.metavar "[NGROUP1,NGROUP2]" <> 
+                                       OP.help "comma-separated list of numbers that \
+                                       \specify how to join sample or groups, surrounded by \
+                                       \square brackets. Example: -n [20,20,1] specifies \
+                                       \that you want to merge the first twenty samples/groups \
+                                       \into one, and sample 21 through 40, and then \
                                        \have the last group separate. See README for instructions.")
-                <*> OP.switch (OP.short 'm' <> OP.long "removeMissing" <> OP.help "if one individual/group has missing data (-1) declare the whole group as missing data.")
+                <*> OP.switch (OP.short 'm' <> OP.long "removeMissing" <> OP.help "if one \
+                    \individual/group has missing data (-1) declare the whole group as \
+                    \missing data. Default behaviour is interpreting missing data as \
+                    \reference calls")
+                <*> OP.option OP.auto (OP.short 'n' <> OP.long "names" <>
+                    OP.metavar "[NAME_GROUP1,NAME_GROUP2,...]" <>
+                    OP.help "specify the new names for each group")
 
 runWithOptions :: MyOpts -> IO ()
-runWithOptions (MyOpts nVec missing) = runScript $ do
-    let freqSums = parsed parseFreqSumEntry PT.stdin
-    res <- runEffect $ for freqSums $ lift . tryRight . groupFreqSum nVec missing >=> lift . scriptIO . putStrLn . show
-    case res of
-        Left (err, _) -> throwE $ "Parsing error: " ++ show err
-        Right () -> return ()
+runWithOptions (MyOpts groups missing newNames) = runScript $ do
+    (FreqSumHeader _ counts, entries) <- parseFreqSum stdin
+    let newCounts = map sum . splitPlaces groups $ counts
+        newEntries = entries >-> P.mapM (tryRight . groupFreqSum groups missing)
+    printFreqSum (FreqSumHeader newNames newCounts, newEntries)
 
 groupFreqSum :: [Int] -> Bool -> FreqSumEntry -> Either String FreqSumEntry
-groupFreqSum nVec missing fs = do
-    assertErr "number of samples doesn't match nVec" $ sum nVec == length (fsCounts fs)
-    let groups = map sum' . splitPlaces nVec $ fsCounts fs
-    return fs {fsCounts = groups}
+groupFreqSum groups missing fs = do
+    assertErr "number of samples doesn't match nVec" $ sum groups == length (fsCounts fs)
+    let newCounts = map sum' . splitPlaces groups $ fsCounts fs
+    return fs {fsCounts = newCounts}
   where
     sum' values =
         if missing then

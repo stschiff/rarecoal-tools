@@ -11,27 +11,36 @@ import Data.Int (Int64)
 import qualified Data.ByteString.Lazy.Char8 as B
 import qualified Data.Text.IO as T
 
-data MyOpts = MyOpts [Int] Int Int64
+data MyOpts = MyOpts [Int] Int Int64 [String]
 
 makeLenses ''MyOpts
 
 main :: IO ()
 main = OP.execParser opts >>= mainWithOptions
   where
-    parser = MyOpts <$> OP.option OP.auto (OP.short 'n' <> OP.long "nVec" <> OP.metavar "<LIST>" <> OP.help "comma-separated list of the number in each subgroup")
-                    <*> OP.option OP.auto (OP.short 'm' <> OP.long "maxM" <> OP.metavar "<INT>" <> OP.help "maximum allele count")
-                    <*> OP.option OP.auto (OP.short 'N' <> OP.long "nrCalledSites" <> OP.metavar "INT" <> OP.help "total length of the genome simulated (not just the number of segregating sites)")
-    opts = OP.info parser (OP.progDesc "converts ms-format output from simulations into a histogram as used for Rarecoal.")
+    parser = MyOpts <$> OP.option OP.auto (OP.short 'n' <> OP.long "nVec" <> OP.metavar "<LIST>" <> 
+                        OP.help "comma-separated list of the number in each subgroup")
+                    <*> OP.option OP.auto (OP.short 'm' <> OP.long "maxM" <> OP.metavar "<INT>" <> 
+                                           OP.help "maximum allele count")
+                    <*> OP.option OP.auto (OP.short 'N' <> OP.long "nrCalledSites" <>
+                                    OP.metavar "INT" <> OP.help "total length of the genome \
+                                    \simulated (not just the number of segregating sites)")
+                    <*> OP.option OP.auto (OP.long "names" <> OP.metavar "[NAME1,NAME2,...]" <>
+                                           OP.help "names of the groups")
+    opts = OP.info parser (OP.progDesc "converts ms-format output from simulations into a \
+                                        \histogram as used for Rarecoal. Expects a matrix of \'1\' \
+                                        \and \'0\', where each line corresponds to a single \
+                                        \chromosome.")
 
 mainWithOptions :: MyOpts -> IO ()
-mainWithOptions (MyOpts nVec maxAf nrCalledSites) = runScript $
-    scriptIO B.getContents >>= tryRight . makeHist nVec maxAf
+mainWithOptions (MyOpts nVec maxAf nrCalledSites names) = runScript $
+    scriptIO B.getContents >>= tryRight . makeHist nVec maxAf names
                            >>= tryRight . setNrCalledSites nrCalledSites
                            >>= tryRight . showHistogram
                            >>= scriptIO . T.putStr
 
-makeHist :: [Int] -> Int -> B.ByteString -> Either String RareAlleleHistogram
-makeHist nVec maxAf s = do
+makeHist :: [Int] -> Int -> [String] -> B.ByteString -> Either String RareAlleleHistogram
+makeHist nVec maxAf names s = do
     let loci = B.transpose . B.lines $ s
     assertErr "nVec doesn't sum up to correct number of samples" $ B.length (head loci) == sum (map fromIntegral nVec)
     let getFreqSum = map (length . filter (=='1')) . splitPlaces nVec . B.unpack
@@ -40,4 +49,4 @@ makeHist nVec maxAf s = do
         toPattern p = if pred_ p then Pattern p else Higher
         insert m k = M.insertWith (+) k 1 m
         counts = foldl insert M.empty $ map toPattern freqSums
-    return $ RareAlleleHistogram nVec 0 maxAf [] counts
+    return $ RareAlleleHistogram names nVec 0 maxAf [] counts

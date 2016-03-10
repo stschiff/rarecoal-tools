@@ -3,9 +3,11 @@
 module Rarecoal.RareAlleleHistogram (RareAlleleHistogram(..),
                             SitePattern(..),
                             addHistograms, filterMaxAf, setNrCalledSites,
-                            loadHistogram, filterGlobalMinAf, readHistogram, showHistogram, readHistogramFromHandle) where
+                            loadHistogram, filterGlobalMinAf, readHistogram, showHistogram, 
+                            readHistogramFromHandle) where
 
 import qualified Data.Map.Strict as Map
+import Data.Char (isAlphaNum)
 import Data.List (intercalate, sortBy)
 import Control.Monad (when, (<=<))
 import Data.Int (Int64)
@@ -19,6 +21,7 @@ import Control.Monad.Trans.State.Strict (evalStateT)
 import Pipes.Attoparsec (parse)
 
 data RareAlleleHistogram = RareAlleleHistogram {
+    raNames :: [String],
     raNVec :: [Int],
     raMinAf :: Int,
     raMaxAf :: Int,
@@ -35,10 +38,11 @@ showHistogram :: RareAlleleHistogram -> Either String T.Text
 showHistogram hist = do
     assertErr "can only print histogram with minAf=0 due to format-legacy" $ raMinAf hist == 0
     assertErr "can only print histogram with no conditioning due to format-legacy" $ length (raConditionOn hist) == 0
-    let head1 = T.concat ["N=", T.pack . intercalate "," . map show . raNVec $ hist]
+    let head0 = T.concat ["NAMES=", T.pack . intercalate "," . raNames $ hist]
+        head1 = T.concat ["N=", T.pack . intercalate "," . map show . raNVec $ hist]
         head2 = T.concat ["MAX_M=", T.pack . show . raMaxAf $ hist]
         body = [T.intercalate " " [T.pack . show $ k, T.pack . show $ v] | (k, v) <- sorted]
-    return $ T.unlines (head1:head2:body)
+    return $ T.unlines (head0:head1:head2:body)
   where
     sorted = sortBy (\(_, v1) (_, v2)  -> compare v2 v1) $ Map.toList (raCounts hist)
 
@@ -53,18 +57,18 @@ readHistogramFromHandle :: Handle -> Script RareAlleleHistogram
 readHistogramFromHandle handle = do
     res <- evalStateT (parse parseHistogram) . PT.fromHandle $ handle
     case res of
-        Nothing -> throwE "file exhausted too early"
-        Just (Left err) -> throwE $ "Parser error: " ++ show err
+        Nothing -> throwE "histogram file exhausted too early"
+        Just (Left err) -> throwE $ "Histogram parsing error: " ++ show err
         Just (Right hist) -> return hist
     
 parseHistogram :: A.Parser RareAlleleHistogram
-parseHistogram = RareAlleleHistogram <$> parseNVec <*> pure 0 <*> parseMaxM <*> pure [] <*> parseBody
+parseHistogram = RareAlleleHistogram <$> (map T.unpack <$> parseNames) <*> parseNVec <*> pure 0 <*> 
+                                         parseMaxM <*> pure [] <*> parseBody
   where
+    parseNames = A.string "NAMES=" *> name `A.sepBy1` A.char ',' <* A.endOfLine
+    name = A.takeWhile1 isAlphaNum
     parseNVec = A.string "N=" *> A.decimal `A.sepBy1` A.char ',' <* A.endOfLine
     parseMaxM = A.string "MAX_M=" *> A.decimal <* A.endOfLine
-    parseBool = do
-        s <- A.string "False" <|> A.string "True"
-        if s == "False" then return False else return True
 
 parseBody :: A.Parser (Map.Map SitePattern Int64)
 parseBody = Map.fromList <$> A.many1 patternLine
@@ -81,6 +85,7 @@ parseBody = Map.fromList <$> A.many1 patternLine
 
 addHistograms :: RareAlleleHistogram -> RareAlleleHistogram -> Either String RareAlleleHistogram
 addHistograms hist1 hist2 = do
+    when (raNames hist1 /= raNames hist2) $ Left "histograms have different names"
     when (raNVec hist1 /= raNVec hist2) $ Left "histograms have different NVecs"
     when (raMaxAf hist1 /= raMaxAf hist2) $ Left "histograms have different maxAf"
     when (raConditionOn hist1 /= raConditionOn hist2) $ Left "histograms differ in conditioning"

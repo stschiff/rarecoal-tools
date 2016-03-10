@@ -1,33 +1,37 @@
-import Control.Error (runScript, tryAssert, scriptIO, Script, throwE)
-import Control.Monad ((>=>))
+import Rarecoal.FreqSum (FreqSumHeader(..), FreqSumEntry(..), parseFreqSum, printFreqSum)
+
+import Control.Error (runScript, tryAssert, scriptIO, Script, tryJust)
 import Data.Monoid ((<>))
 import qualified Options.Applicative as OP
-import qualified Pipes.Text.IO as PT
-import Pipes (runEffect, for, lift)
-import Pipes.Attoparsec (parsed)
-import Rarecoal.FreqSumEntry (FreqSumEntry(..), parseFreqSumEntry)
+import Pipes ((>->))
+import qualified Pipes.Prelude as P
+import System.IO (stdin)
 import System.Random (randomIO)
 
-data MyOpts = MyOpts Int Int Int
+data MyOpts = MyOpts String Int
 
 main :: IO ()
 main = OP.execParser opts >>= runWithOptions
   where
-    opts = OP.info (OP.helper <*> parser) (OP.progDesc "Tool for downsampling a freqSum file. If a column is -1, the downsampled column will also have -1.")
+    opts = OP.info (OP.helper <*> parser) (OP.progDesc "Tool for downsampling a freqSum file. If \
+                    \-> expressiona column is -1, the downsampled column will also have -1. \
+                    \Reads from stdin")
 
 parser :: OP.Parser MyOpts
-parser = MyOpts <$> OP.argument OP.auto (OP.metavar "<POSITION>" <> OP.help "the 0-based index of the population to sample from")
-                <*> OP.argument OP.auto (OP.metavar "<N_BEFORE>" <> OP.help "the number of haplotypes in the group before sampling")
-                <*> OP.argument OP.auto (OP.metavar "<N_AFTER>" <> OP.help "the new number of haplotypes to downsample to")
+parser = MyOpts <$> OP.strArgument (OP.metavar "<NAME>" <> OP.help "the name of the population \
+                                    \to sample from")
+                <*> OP.argument OP.auto (OP.metavar "<N_AFTER>" <>
+                                OP.help "the new number of haplotypes to downsample to")
 
 runWithOptions :: MyOpts -> IO ()
-runWithOptions (MyOpts position nBefore nAfter) = runScript $ do
+runWithOptions (MyOpts name nAfter) = runScript $ do
+    (FreqSumHeader names counts, entries) <- parseFreqSum stdin
+    index <- tryJust "did not find name" $ name `lookup` zip names [0..]
+    let nBefore = counts !! index
     tryAssert "nBefore has to be >= nAfter" $ nBefore >= nAfter
-    let freqSums = parsed parseFreqSumEntry PT.stdin
-    res <- runEffect $ for freqSums $ lift . downSample position nBefore nAfter >=> lift . scriptIO . putStrLn . show
-    case res of
-        Left (err, _) -> throwE $ "Parsing error: " ++ show err
-        Right () -> return ()
+    let newEntries = entries >-> P.mapM (downSample index nBefore nAfter)
+        newCounts = take index counts ++ [nAfter] ++ drop (index + 1) counts
+    printFreqSum (FreqSumHeader names newCounts, newEntries)
 
 downSample :: Int -> Int -> Int -> FreqSumEntry -> Script FreqSumEntry
 downSample pos nBefore nAfter fs = do
@@ -46,7 +50,9 @@ sampleWithoutReplacement n k howMany = go n k howMany 0
     go _ 0 _ ret = return ret
     go n' k' howMany' ret = do
         val <- bernoulli $ fromIntegral k' / fromIntegral n'
-        if val then go (n' - 1) (k' - 1) (howMany' - 1) (ret + 1) else go (n' - 1) k' (howMany' - 1) ret
+        if val
+        then go (n' - 1) (k' - 1) (howMany' - 1) (ret + 1)
+        else go (n' - 1) k' (howMany' - 1) ret
 
 bernoulli :: Double -> IO Bool
 bernoulli p = (<p) <$> randomIO

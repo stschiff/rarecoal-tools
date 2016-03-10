@@ -3,11 +3,11 @@
 import Rarecoal.RareAlleleHistogram (readHistogramFromHandle, showHistogram, 
                                      RareAlleleHistogram(..), SitePattern(..))
 
-import Control.Error (runScript, tryRight, errLn)
+import Control.Error (runScript, tryRight, errLn, scriptIO, Script, tryJust)
 import Control.Foldl (impurely, FoldM(..))
 import Control.Lens ((&), (%~), ix)
-import Control.Monad (replicateM_, when)
-import Control.Monad.IO.Class (liftIO)
+import Control.Monad (replicateM_)
+import Control.Monad.Trans.Class (lift)
 import Data.Int (Int64)
 import qualified Data.Map.Strict as M
 import Data.Monoid ((<>))
@@ -18,61 +18,61 @@ import qualified Pipes.Prelude as P
 import System.IO (stdin, IOMode(..), openFile)
 import System.Random (randomIO)
 
-data MyOpts = MyOpts {
-    _optQueryPop :: Int,
-    _optHowMany :: Int,
-    _optHistPath :: FilePath
-}
+data MyOpts = MyOpts String Int FilePath
 
 main :: IO ()
 main = OP.execParser opts >>= runWithOptions
   where
-    opts = OP.info (OP.helper <*> parser) (OP.progDesc "sample a number of haplotypes (independently at each site) from a population in a histogram")
+    opts = OP.info (OP.helper <*> parser) (OP.progDesc "sample a number of haplotypes \
+                                \(independently at each site) from a population in a histogram")
 
 parser :: OP.Parser MyOpts
-parser = MyOpts <$> OP.option OP.auto (OP.short 'q' <> OP.long "queryBranch" <> OP.metavar "<INT>" <> OP.help "the population index (0-based) from which to sample")
-                <*> OP.option OP.auto (OP.short 'n' <> OP.long "howMany" <> OP.metavar "<INT>" <> OP.help "how many samples should be drawn at each site")
-                <*> OP.option OP.str (OP.short 'i' <> OP.long "hist" <> OP.metavar "<path-to-histogram>" <> OP.help "the input histogram file, set - for stdin")
+parser = MyOpts <$> OP.strOption (OP.short 'n' <> OP.long "name" <>
+                            OP.metavar "<NAME>" <> OP.help "the population (by name) from \
+                                                            \which to sample")
+                <*> OP.option OP.auto (OP.short 'n' <> OP.long "howMany" <> OP.metavar "<INT>" <> 
+                                    OP.help "how many samples should be drawn at each site")
+                <*> OP.strOption (OP.short 'i' <> OP.long "hist" <>
+                                    OP.metavar "<path-to-histogram>" <>
+                                    OP.help "the input histogram file, set - for stdin")
 
 runWithOptions :: MyOpts -> IO ()
-runWithOptions opts = do
-    handle <- if _optHistPath opts == "-" then
-            return stdin
-        else
-            openFile (_optHistPath opts) ReadMode
-    hist <- runScript $ readHistogramFromHandle handle
-    hist' <- makeNewHist (_optQueryPop opts) (_optHowMany opts) hist
-    outs <- runScript . tryRight $ showHistogram hist'
-    T.putStr outs
+runWithOptions (MyOpts name howMany histPath) = runScript $ do
+    handle <- if histPath == "-" then return stdin else scriptIO $ openFile histPath ReadMode
+    hist <- readHistogramFromHandle handle
+    hist' <- makeNewHist name howMany hist
+    outs <- tryRight $ showHistogram hist'
+    scriptIO $ T.putStr outs
 
-makeNewHist :: Int -> Int -> RareAlleleHistogram -> IO RareAlleleHistogram
-makeNewHist query howMany hist = do
+makeNewHist :: String -> Int -> RareAlleleHistogram -> Script RareAlleleHistogram
+makeNewHist name howMany hist = do
+    queryIndex <- tryJust ("could not find name: " ++ name) $ lookup name (zip (raNames hist) [0..])
     let histRows = M.toList (raCounts hist)
         nVec = raNVec hist
         patternProducer = mapM_ yield histRows
-        sampledProducer = for patternProducer (sampleFromPattern query howMany nVec)
+        sampledProducer = for patternProducer (sampleFromPattern queryIndex howMany nVec)
     (patternMap, _) <- impurely P.foldM' makeMap sampledProducer
-    let newNVec = (nVec & ix query %~ (\v -> v - howMany)) ++ [howMany]
+    let newNVec = (nVec & ix queryIndex %~ (\v -> v - howMany)) ++ [howMany]
     return hist {raNVec = newNVec, raCounts = patternMap}
 
 sampleFromPattern :: Int -> Int -> [Int] -> (SitePattern, Int64) ->
-                     Producer (SitePattern, Int64) IO ()
-sampleFromPattern query howMany nVec (pat, count) = do
-    liftIO $ errLn ("processing pattern " ++ show pat)
+                     Producer (SitePattern, Int64) Script ()
+sampleFromPattern queryIndex howMany nVec (pat, count) = do
+    lift . scriptIO $ errLn ("processing pattern " ++ show pat)
     case pat of
         Higher -> yield (Higher, count)
         Pattern pattern -> do
-            let n = nVec !! query
-                k = pattern !! query
+            let n = nVec !! queryIndex
+                k = pattern !! queryIndex
             if k == 0 then
                 yield (Pattern (pattern ++ [0]), count)
             else
                 replicateM_ (fromIntegral count) $ do
-                    newK <- liftIO $ sampleWithoutReplacement n k howMany
-                    let newPat = (pattern & ix query %~ (\v -> v - newK)) ++ [newK]
+                    newK <- lift $ sampleWithoutReplacement n k howMany
+                    let newPat = (pattern & ix queryIndex %~ (\v -> v - newK)) ++ [newK]
                     yield (Pattern newPat, 1)
 
-sampleWithoutReplacement :: Int -> Int -> Int -> IO Int
+sampleWithoutReplacement :: Int -> Int -> Int -> Script Int
 sampleWithoutReplacement n k howMany = go n k howMany 0
   where
     go !_ !_ !0 !ret = return ret
@@ -89,10 +89,10 @@ choose :: Int -> Int -> Double
 choose _ 0 = 1
 choose n k = product [fromIntegral (n + 1 - j) / fromIntegral j | j <- [1..k]]
         
-bernoulli :: Double -> IO Bool
-bernoulli p = (<p) <$> randomIO 
+bernoulli :: Double -> Script Bool
+bernoulli p = (<p) <$> scriptIO randomIO 
 
-makeMap :: FoldM IO (SitePattern, Int64) (M.Map SitePattern Int64)
+makeMap :: FoldM Script (SitePattern, Int64) (M.Map SitePattern Int64)
 makeMap = FoldM step initial extract
   where
     step m (p, c) = return $ M.insertWith (+) p c m

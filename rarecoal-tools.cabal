@@ -2,7 +2,7 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 name:                rarecoal-tools
-version:             1.0.0
+version:             1.1.0
 license:             GPL-3
 license-file:        LICENSE
 author:              Stephan Schiffels
@@ -12,9 +12,9 @@ build-type:          Simple
 cabal-version:       >=1.10
 
 library
-  exposed-modules:     Rarecoal.RareAlleleHistogram, Rarecoal.FreqSumEntry
+  exposed-modules:     Rarecoal.RareAlleleHistogram, Rarecoal.FreqSum
   hs-source-dirs:      src
-  build-depends:       base, containers, errors, text, attoparsec, pipes-text, transformers,
+  build-depends:       base, containers, errors, text, attoparsec, pipes, pipes-text, transformers,
                        pipes-attoparsec, vector, data-memocombinators, split, MissingH, hslogger
   default-language:    Haskell2010
   ghc-options:         -O
@@ -29,7 +29,8 @@ executable vcf2FreqSum
                        pipes,
                        pipes-attoparsec,
                        pipes-text,
-                       optparse-applicative
+                       optparse-applicative,
+                       transformers
   default-language:    Haskell2010
 
 executable groupFreqSum
@@ -44,15 +45,15 @@ executable groupFreqSum
                        split
   default-language:    Haskell2010
 
-executable extractInFreqSum
-  main-is:             extractInFreqSum.hs
-  hs-source-dirs:      src-extractInFreqSum
+executable selectInFreqSum
+  main-is:             selectInFreqSum.hs
+  hs-source-dirs:      src-selectInFreqSum
   build-depends:       base, rarecoal-tools,
                        optparse-applicative,
                        pipes-text,
                        pipes,
                        pipes-attoparsec,
-                       errors
+                       errors, split
   default-language:    Haskell2010
 
 executable sampleHist

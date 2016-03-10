@@ -1,38 +1,34 @@
-import System.IO (openFile, IOMode(..), hClose, stdin)
-import qualified Options.Applicative as OP
 import OrderedZip (orderedZip)
-import qualified Pipes.Prelude as P
-import Pipes ((>->), runEffect, for)
-import Data.Monoid ((<>))
-import Debug.Trace (trace)
-import Control.Monad.Trans.Class (lift)
-import Rarecoal.FreqSumEntry (FreqSumEntry(..), parseFreqSumEntry)
-import Pipes.Attoparsec (parsed)
-import qualified Pipes.Text.IO as PT
-import Control.Error (runScript, scriptIO, throwE)
+import Rarecoal.FreqSum (FreqSumEntry(..), FreqSumHeader(..), parseFreqSum, printFreqSum)
 
-data MyOpts = MyOpts FilePath FilePath Int Int
+import Control.Error (runScript, scriptIO)
+import Data.Monoid ((<>))
+import qualified Options.Applicative as OP
+import Pipes ((>->))
+import qualified Pipes.Prelude as P
+import System.IO (openFile, IOMode(..), hClose, stdin)
+
+data MyOpts = MyOpts FilePath FilePath
 
 main :: IO ()
 main = OP.execParser opts >>= runWithOptions
   where
-    parser = MyOpts <$> OP.argument OP.str (OP.metavar "freqSumFile1" <> OP.help "file 1, put - for stdin")
+    parser = MyOpts <$> OP.argument OP.str (OP.metavar "freqSumFile1" <>
+                                        OP.help "file 1, put - for stdin")
                     <*> OP.argument OP.str (OP.metavar "freqSumFile2" <> OP.help "file 2")
-                    <*> OP.argument OP.auto (OP.metavar "<n1>" <> OP.help "number of samples/groups in file 1")
-                    <*> OP.argument OP.auto (OP.metavar "<n2>" <> OP.help "number of samples/groups in file 2")
     opts = OP.info (OP.helper <*> parser) (OP.progDesc "merge two freqSumFiles into one.")
 
 runWithOptions :: MyOpts -> IO ()
-runWithOptions (MyOpts f1 f2 n1 n2) = runScript $ do
+runWithOptions (MyOpts f1 f2) = runScript $ do
     h1 <- if f1 == "-" then return stdin else scriptIO $ openFile f1 ReadMode
     h2 <- scriptIO $ openFile f2 ReadMode
-    let p1 = parsed parseFreqSumEntry . PT.fromHandle $ h1
-        p2 = parsed parseFreqSumEntry . PT.fromHandle $ h2
-        combinedProd = orderedZip comp p1 p2 >-> P.map (freqSumCombine n1 n2)
-    res <- runEffect $ for combinedProd $ lift . scriptIO . putStrLn . show
-    case res of
-        Left (err, _) -> throwE $ "Parsing error: " ++ show err
-        Right () -> return ()
+    (FreqSumHeader names1 counts1, entries1) <- parseFreqSum h1
+    (FreqSumHeader names2 counts2, entries2) <- parseFreqSum h2
+    let n1 = length names1
+        n2 = length names2
+    let combinedEntries = orderedZip comp entries1 entries2 >-> P.map (freqSumCombine n1 n2)
+        newHeader = FreqSumHeader (names1 ++ names2) (counts1 ++ counts2)
+    printFreqSum (newHeader, combinedEntries)
     scriptIO . hClose $ h1
     scriptIO . hClose $ h2
   where

@@ -1,5 +1,4 @@
 import Rarecoal.RareAlleleHistogram (RareAlleleHistogram(..), addHistograms, showHistogram, readHistogram)
-import System.Environment (getArgs)
 import Control.Monad (foldM)
 import Control.Error (scriptIO, runScript, Script, tryRight)
 import qualified Data.Text.IO as T
