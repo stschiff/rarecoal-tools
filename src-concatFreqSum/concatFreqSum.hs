@@ -1,7 +1,7 @@
 import Rarecoal.FreqSum (parseFreqSum, printFreqSum)
 
 import Control.Error (runScript, tryAssert)
-import Control.Monad (forM_, msum)
+import Control.Monad (forM_)
 import Control.Monad.Managed (runManaged, managed)
 import Control.Monad.IO.Class (liftIO)
 import Data.Monoid ((<>))
@@ -21,5 +21,5 @@ runWithOptions fns = runManaged $ do
         fs <- mapM parseFreqSum handles
         let (firstHeader:restHeaders) = map fst fs
         forM_ restHeaders $ \h -> tryAssert "freqSum headers not identical" $ firstHeader == h
-        let newEntries = msum . map snd $ fs
+        let newEntries = sequence_ . map snd $ fs
         printFreqSum (firstHeader, newEntries)
