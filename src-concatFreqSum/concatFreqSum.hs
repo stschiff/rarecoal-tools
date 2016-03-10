@@ -12,7 +12,7 @@ main :: IO ()
 main = OP.execParser parser >>= runWithOptions
   where
     parser = OP.info (OP.helper <*> options) (OP.progDesc "concatenates multiple freqSum files")
-    options = OP.some (OP.strArgument (OP.metavar "FILE" <> OP.help "input file(s)"))
+    options = OP.some (OP.strArgument (OP.metavar "FILES" <> OP.help "input file(s)"))
 
 runWithOptions :: [FilePath] -> IO ()
 runWithOptions fns = runManaged $ do

@@ -17,8 +17,7 @@ main :: IO ()
 main = OP.execParser opts >>= runWithOptions
   where
     opts = OP.info (OP.helper <*> parser) (OP.progDesc "Tool to convert a freqSum file, read \
-    \from stdin, to to a histogram file as needed for rarecoal. Any pattern containing -1 in \
-    \any selected column is excluded.")
+    \from stdin, to to a histogram file as needed for rarecoal.")
 
 parser :: OP.Parser MyOpts
 parser = MyOpts <$> OP.option OP.auto (OP.long "maxM"

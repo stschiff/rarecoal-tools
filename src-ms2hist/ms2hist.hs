@@ -27,7 +27,8 @@ main = OP.execParser opts >>= mainWithOptions
                                     \simulated (not just the number of segregating sites)")
                     <*> OP.option OP.auto (OP.long "names" <> OP.metavar "[NAME1,NAME2,...]" <>
                                            OP.help "names of the groups")
-    opts = OP.info parser (OP.progDesc "converts ms-format output from simulations into a \
+    opts = OP.info (OP.helper <*> parser)
+                        (OP.progDesc "converts ms-format output from simulations into a \
                                         \histogram as used for Rarecoal. Expects a matrix of \'1\' \
                                         \and \'0\', where each line corresponds to a single \
                                         \chromosome.")
