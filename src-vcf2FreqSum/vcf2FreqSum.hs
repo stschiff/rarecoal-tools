@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-import Rarecoal.FreqSum (FreqSumEntry(..))
+import Rarecoal.FreqSum (FreqSumEntry(..), FreqSumHeader(..))
 
 import Control.Applicative ((<|>))
 import Control.Error (runScript, scriptIO, Script, throwE)
@@ -17,7 +17,7 @@ import Pipes.Prelude (foldM')
 import qualified Pipes.Text.IO as PT
 import System.IO (Handle, stdin)
 
-data VCFheader = VCFheader [T.Text] [T.Text] -- simple comment lines, sample names
+data VCFheader = VCFheader [T.Text] [String] -- simple comment lines, sample names
 data VCFentry = VCFentry T.Text Int T.Text T.Text [(Char,Char)]
                 deriving (Show)
 
@@ -30,7 +30,8 @@ main = OP.execParser opts >> run
 run :: IO () 
 run = runScript $ do
     (VCFheader _ names, vcfProd) <- parseVCF stdin
-    scriptIO . T.putStrLn . T.intercalate "\t" $ ["CHROM", "POS", "REF", "ALT"] ++ names 
+    let fsHeader = FreqSumHeader names (replicate (length names) 2)
+    scriptIO . putStrLn . show $ fsHeader
     _ <- foldM' processVCFentry (return 0) (const (return ())) vcfProd
     return ()
 
@@ -62,7 +63,7 @@ parseVCFheader = VCFheader <$> A.many' doubleCommentLine <*> singleCommentLine
         void $ A.char '#'
         s <- A.takeTill A.isEndOfLine <* A.endOfLine
         let fields = T.splitOn "\t" s
-        return $ drop 9 fields
+        return . drop 9 . map T.unpack $ fields
 
 parseVCFentry :: A.Parser VCFentry
 parseVCFentry = do

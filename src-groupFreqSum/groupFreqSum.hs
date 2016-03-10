@@ -1,7 +1,7 @@
 import Rarecoal.FreqSum (FreqSumEntry(..), parseFreqSum, FreqSumHeader(..), printFreqSum)
 
 import Control.Error (runScript, tryRight, assertErr)
-import Data.List.Split (splitPlaces)
+import Data.List.Split (splitPlaces, splitOn)
 import Data.Monoid ((<>))
 import qualified Options.Applicative as OP
 import Pipes ((>->))
@@ -29,9 +29,9 @@ parser = MyOpts <$> OP.option OP.auto (OP.short 'g' <> OP.long "groups" <>
                     \individual/group has missing data (-1) declare the whole group as \
                     \missing data. Default behaviour is interpreting missing data as \
                     \reference calls")
-                <*> OP.option OP.auto (OP.short 'n' <> OP.long "names" <>
-                    OP.metavar "[NAME_GROUP1,NAME_GROUP2,...]" <>
-                    OP.help "specify the new names for each group")
+                <*> OP.option (splitOn "," <$> OP.str) (OP.short 'n' <> OP.long "names" <>
+                        OP.metavar "NAME_GROUP1,NAME_GROUP2,..." <>
+                        OP.help "specify the new names for each group as comma-separated list")
 
 runWithOptions :: MyOpts -> IO ()
 runWithOptions (MyOpts groups missing newNames) = runScript $ do

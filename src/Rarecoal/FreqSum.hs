@@ -22,7 +22,7 @@ data FreqSumHeader = FreqSumHeader {
 }
 
 instance Show FreqSumHeader where
-    show (FreqSumHeader names nCounts) = "##CHROM\tPOS\tREF\tALT\t" ++ intercalate "\t" tuples
+    show (FreqSumHeader names nCounts) = "#CHROM\tPOS\tREF\tALT\t" ++ intercalate "\t" tuples
       where
         tuples = zipWith (\n c -> n ++ "(" ++ show c ++ ")") names nCounts
 
@@ -57,7 +57,7 @@ parseFreqSum handle = do
 
 parseFreqSumHeader :: A.Parser FreqSumHeader
 parseFreqSumHeader = do
-    tuples <- A.string "##CHROM\tPOS\tREF\tALT\t" >> A.sepBy' tuple A.space <* A.endOfLine
+    tuples <- A.string "#CHROM\tPOS\tREF\tALT\t" >> A.sepBy' tuple A.space <* A.endOfLine
     let names = map (unpack . fst) tuples
         counts = map snd tuples
     return $ FreqSumHeader names counts
