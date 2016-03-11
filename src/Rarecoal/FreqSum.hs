@@ -62,7 +62,7 @@ parseFreqSumHeader = do
         counts = map snd tuples
     return $ FreqSumHeader names counts
   where
-    tuple = (,) <$> A.takeWhile isAlphaNum <* A.char '(' <*> A.decimal <* A.char ')'
+    tuple = (,) <$> A.takeWhile (\c -> isAlphaNum c || c == '_') <* A.char '(' <*> A.decimal <* A.char ')'
 
 parseFreqSumEntry :: A.Parser FreqSumEntry
 parseFreqSumEntry = FreqSumEntry <$> word <* A.skipSpace <*> A.decimal <* A.skipSpace <*>
