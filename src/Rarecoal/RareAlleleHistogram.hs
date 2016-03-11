@@ -66,7 +66,7 @@ parseHistogram = RareAlleleHistogram <$> (map T.unpack <$> parseNames) <*> parse
                                          parseMaxM <*> pure [] <*> parseBody
   where
     parseNames = A.string "NAMES=" *> name `A.sepBy1` A.char ',' <* A.endOfLine
-    name = A.takeWhile1 isAlphaNum
+    name = A.takeWhile1 (\c -> isAlphaNum c || c == '_')
     parseNVec = A.string "N=" *> A.decimal `A.sepBy1` A.char ',' <* A.endOfLine
     parseMaxM = A.string "MAX_M=" *> A.decimal <* A.endOfLine
 
