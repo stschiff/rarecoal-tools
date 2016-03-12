@@ -24,7 +24,8 @@ runWithOptions :: MyOpts -> IO ()
 runWithOptions (MyOpts names) = runScript $ do
     (FreqSumHeader oldNames oldCounts, entries) <- parseFreqSum stdin
     indices <- mapM (findIndex oldNames) names
-    let newEntries = entries >-> P.map (selectColumns indices)
+    let newEntries = entries >-> P.map (selectColumns indices) >->
+                                 P.filter ((>0) . sum . filter (>=0) . fsCounts)
         newCounts = map (oldCounts!!) indices
         newHeader = FreqSumHeader names newCounts
     printFreqSum (newHeader, newEntries)
