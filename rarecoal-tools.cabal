@@ -115,7 +115,7 @@ executable combineHistograms
   main-is:             combineHistograms.hs
   hs-source-dirs:      src-combineHistograms
   build-depends:       base, rarecoal-tools, errors, text, optparse-applicative, pipes-text, pipes,
-                       pipes-attoparsec, errors, random
+                       pipes-attoparsec, errors, random, containers
   default-language:    Haskell2010
 
 executable ms2hist
