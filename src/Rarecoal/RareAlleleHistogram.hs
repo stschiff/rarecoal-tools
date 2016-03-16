@@ -83,8 +83,8 @@ parseBody = Map.fromList <$> A.many1 patternLine
 setNrCalledSites :: Int64 -> RareAlleleHistogram -> Either String RareAlleleHistogram
 setNrCalledSites newNrCalledSites hist = do
     let zeroKey = Pattern $ replicate (length $ raNVec hist) 0
-    nrZeroCalls <- justErr ("did not find key " ++ show zeroKey) $ zeroKey `Map.lookup` (raCounts hist)
-    let nrCalledSites = Map.foldr (+) 0 $ raCounts hist
+        nrZeroCalls = Map.findWithDefault 0 zeroKey (raCounts hist)
+        nrCalledSites = Map.foldr (+) 0 $ raCounts hist
         nrNonZeroCalls = nrCalledSites - nrZeroCalls
         newZeroCalls = newNrCalledSites - nrNonZeroCalls
     when (newZeroCalls < 0) $ Left "Illegal nrCalledSites" 
