@@ -8,6 +8,7 @@ import Rarecoal.RareAlleleHistogram(RareAlleleHistogram(..), showHistogram, setN
 import Control.Lens (makeLenses)
 import Control.Error (runScript, scriptIO, assertErr, tryRight)
 import Data.Int (Int64)
+import Data.List.Split (splitOn)
 import qualified Data.ByteString.Lazy.Char8 as B
 import qualified Data.Text.IO as T
 
@@ -18,15 +19,15 @@ makeLenses ''MyOpts
 main :: IO ()
 main = OP.execParser opts >>= mainWithOptions
   where
-    parser = MyOpts <$> OP.option OP.auto (OP.short 'n' <> OP.long "nVec" <> OP.metavar "<LIST>" <> 
+    parser = MyOpts <$> OP.option (map read . splitOn "," <$> OP.str) (OP.short 'n' <> OP.long "nVec" <> OP.metavar "N1,N2,..." <> 
                         OP.help "comma-separated list of the number in each subgroup")
                     <*> OP.option OP.auto (OP.short 'm' <> OP.long "maxM" <> OP.metavar "<INT>" <> 
                                            OP.help "maximum allele count")
                     <*> OP.option OP.auto (OP.short 'N' <> OP.long "nrCalledSites" <>
                                     OP.metavar "INT" <> OP.help "total length of the genome \
                                     \simulated (not just the number of segregating sites)")
-                    <*> OP.option OP.auto (OP.long "names" <> OP.metavar "[NAME1,NAME2,...]" <>
-                                           OP.help "names of the groups")
+                    <*> OP.option (splitOn "," <$> OP.str) (OP.long "names" <> OP.metavar "NAME1,NAME2,..." <>
+                                           OP.help "comma-separated list of names of the groups")
     opts = OP.info (OP.helper <*> parser)
                         (OP.progDesc "converts ms-format output from simulations into a \
                                         \histogram as used for Rarecoal. Expects a matrix of \'1\' \
