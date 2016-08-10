@@ -27,7 +27,7 @@ instance Show FreqSumHeader where
         tuples = zipWith (\n c -> n ++ "(" ++ show c ++ ")") names nCounts
 
 data FreqSumEntry = FreqSumEntry {
-    fsChrom  :: String,
+    fsChrom  :: Int,
     fsPos    :: Int,
     fsRef    :: Char,
     fsAlt    :: Char,
@@ -36,7 +36,7 @@ data FreqSumEntry = FreqSumEntry {
 
 instance Show FreqSumEntry where
     show (FreqSumEntry chrom pos ref alt counts) =
-        intercalate "\t" [chrom, show pos, [ref], [alt], intercalate "\t" . map show $ counts]
+        intercalate "\t" [show chrom, show pos, [ref], [alt], intercalate "\t" . map show $ counts]
 
 parseFreqSum :: Handle -> Script (FreqSumHeader, Producer FreqSumEntry Script ())
 parseFreqSum handle = do
@@ -65,11 +65,10 @@ parseFreqSumHeader = do
     tuple = (,) <$> A.takeWhile (\c -> isAlphaNum c || c == '_') <* A.char '(' <*> A.decimal <* A.char ')'
 
 parseFreqSumEntry :: A.Parser FreqSumEntry
-parseFreqSumEntry = FreqSumEntry <$> word <* A.skipSpace <*> A.decimal <* A.skipSpace <*>
+parseFreqSumEntry = FreqSumEntry <$> A.decimal <* A.skipSpace <*> A.decimal <* A.skipSpace <*>
                                      A.letter <* A.skipSpace <*> A.letter <* A.skipSpace <*>
                                      counts <* A.endOfLine
   where
-    word = unpack <$> A.takeWhile1 (A.notInClass "\n\t\r")
     counts = (A.signed A.decimal) `A.sepBy` A.char '\t'
 
 printFreqSum :: MonadIO io => (FreqSumHeader, Producer FreqSumEntry io ()) -> io ()
