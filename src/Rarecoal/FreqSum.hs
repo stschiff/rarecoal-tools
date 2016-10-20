@@ -44,7 +44,10 @@ parseFreqSum handle = do
     (res, rest) <- runStateT (parse parseFreqSumHeader) prod
     header <- case res of
         Nothing -> throwE "freqSum file exhausted"
-        Just (Left e) -> throwE ("freqSum file parsing error: " ++ show e)
+        Just (Left e) -> do
+            Right (chunk, _) <- next rest
+            let msg = show e ++ unpack chunk
+            throwE msg
         Just (Right h) -> return h
     return (header, parsed parseFreqSumEntry rest >>= liftErrors)
   where

@@ -50,9 +50,12 @@ runWithOptions (MyOpts maxM nrCalledSites removeMissing) = runScript $ do
     step m fse =
         case mkPat fse of
             Pattern pat ->
-                if removeMissing && any (<0) pat
-                then m
-                else Map.insertWith (\_ v -> v + 1) (Pattern pat) 1 m
+                if removeMissing
+                then
+                    if any (<0) pat then m else Map.insertWith (\_ v -> v + 1) (Pattern pat) 1 m
+                else
+                    let newPat = map (\p -> max 0 p) pat
+                    in  Map.insertWith (\_ v -> v + 1) (Pattern newPat) 1 m
             Higher -> Map.insertWith (\_ v -> v + 1) Higher 1 m
     mkPat = makePattern . fsCounts
     makePattern vec = if isHigherAF vec then Higher else Pattern vec
