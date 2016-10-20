@@ -26,6 +26,8 @@ A `-1` denotes missing data. The tool fails if you pass indels or multi-allelic 
 
     bcftools view -m2 -M2 -c1 -v snps -S <sample_list.txt> <vcf_file> | vcf2FreqSum > output.txt
 
+Note that the chromosome in a freqSum file must be a number. The script converts things like "chr1" into 1 and "chrX" or "X" into 23, "chrY" or "Y" into 24, and "chrMT" or "MT" into 90  (although it's not clear why you would want to use Y chromosomes here). If you have other chromosome names because you are not working with humans, you'll have to first convert all chromosome names in your VCF to numerical numbers.
+
 ### groupFreqSum
 This tools groups freqSum columns (read from stdin) into sample groups, giving the total allele count of all samples in that group. Here is the help file (type `groupFreqSum -h`):
 
@@ -67,7 +69,7 @@ This tools merges two freqSum files. It takes four arguments, as shown by typing
 	  freqSumFile1             file 1, put - for stdin
 	  freqSumFile2             file 2
 
-This tool merges two data sets, interleaving sites if necessary. If a site is present in one file but not the other, the sites in the latter data set are assumed to be homozygous reference.
+This tool merges two data sets, interleaving sites if necessary. If a site is present in one file but not the other, the sites in the latter data set are assumed to be homozygous reference. Note that both freqSum files are expected to be ordered, first by chromosome and then by position.
 
 ### downSampleFreqSum
 Typing `downSampleFreqSum -h` gives:

@@ -3,12 +3,13 @@
 import Rarecoal.FreqSum (FreqSumEntry(..), FreqSumHeader(..))
 
 import Control.Applicative ((<|>))
-import Control.Error (runScript, scriptIO, Script, throwE)
+import Control.Error (runScript, scriptIO, Script, throwE, tryRight)
 import Control.Monad (void)
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.State.Strict (runStateT)
 import qualified Data.Attoparsec.Text as A
 import qualified Data.Text as T
+import qualified Data.Text.Read as T
 import qualified Options.Applicative as OP
 import Pipes (next, Producer)
 import Pipes.Attoparsec (parsed, parse)
@@ -99,7 +100,17 @@ processVCFentry lastPos (VCFentry chrom pos ref alt genotypes) = do
     else do
         let gens = [[g1, g2] | (g1, g2) <- genotypes]
         let counts = [if any (=='.') c then -1 else length $ filter (=='1') c | c <- gens]
-            fs = FreqSumEntry (T.unpack chrom) pos (T.head ref) (T.head alt) counts
+        chrom' <- tryRight $ parseChrom chrom
+        let fs = FreqSumEntry chrom' pos (T.head ref) (T.head alt) counts
         scriptIO $ print fs
         return pos
 
+parseChrom :: T.Text -> Either String Int
+parseChrom chrom =
+    case strippedChrom of
+        "X" -> Right 23
+        "Y" -> Right 24
+        "MT" -> Right 90
+        s -> fst <$> T.decimal s
+  where
+    strippedChrom = if T.take 3 chrom == "chr" then T.drop 3 chrom else chrom

@@ -32,13 +32,13 @@ runWithOptions (MyOpts f1 f2) = runScript $ do
     scriptIO . hClose $ h1
     scriptIO . hClose $ h2
   where
-    comp fs1 fs2 = fsPos fs1 `compare` fsPos fs2
+    comp fs1 fs2 = (fsChrom fs1, fsPos fs1) `compare` (fsChrom fs2, fsPos fs2)
 
 freqSumCombine :: Int -> Int -> (Maybe FreqSumEntry, Maybe FreqSumEntry) -> FreqSumEntry
 freqSumCombine _ n2 (Just fs1, Nothing) = fs1 {fsCounts = fsCounts fs1 ++ replicate n2 0}
 freqSumCombine n1 _ (Nothing, Just fs2) = fs2 {fsCounts = replicate n1 0 ++ fsCounts fs2}
 freqSumCombine _ n2 (Just fs1, Just fs2) = 
-    if fsChrom fs1 == fsChrom fs2 && fsRef fs1 == fsRef fs2 && fsAlt fs1 == fsAlt fs2
+    if fsRef fs1 == fsRef fs2 && fsAlt fs1 == fsAlt fs2
         then fs1 {fsCounts = fsCounts fs1 ++ fsCounts fs2}
         else fs1 {fsCounts = fsCounts fs1 ++ replicate n2 0}
 freqSumCombine _ _ (Nothing, Nothing) = undefined
