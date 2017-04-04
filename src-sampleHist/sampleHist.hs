@@ -1,7 +1,7 @@
 {-# LANGUAGE BangPatterns #-}
 
 import Rarecoal.RareAlleleHistogram (readHistogramFromHandle, showHistogram, 
-                                     RareAlleleHistogram(..), SitePattern(..))
+                                     RareAlleleHistogram(..), SitePattern)
 
 import Control.Error (runScript, tryRight, errLn, scriptIO, Script, tryJust)
 import Control.Foldl (impurely, FoldM(..))
@@ -57,20 +57,17 @@ makeNewHist name howMany hist = do
 
 sampleFromPattern :: Int -> Int -> [Int] -> (SitePattern, Int64) ->
                      Producer (SitePattern, Int64) Script ()
-sampleFromPattern queryIndex howMany nVec (pat, count) = do
-    lift . scriptIO $ errLn ("processing pattern " ++ show pat)
-    case pat of
-        Higher -> yield (Higher, count)
-        Pattern pattern -> do
-            let n = nVec !! queryIndex
-                k = pattern !! queryIndex
-            if k == 0 then
-                yield (Pattern (pattern ++ [0]), count)
-            else
-                replicateM_ (fromIntegral count) $ do
-                    newK <- lift $ sampleWithoutReplacement n k howMany
-                    let newPat = (pattern & ix queryIndex %~ (\v -> v - newK)) ++ [newK]
-                    yield (Pattern newPat, 1)
+sampleFromPattern queryIndex howMany nVec (pattern, count) = do
+    lift . scriptIO $ errLn ("processing pattern " ++ show pattern)
+    let n = nVec !! queryIndex
+        k = pattern !! queryIndex
+    if k == 0 then
+        yield (pattern ++ [0], count)
+    else
+        replicateM_ (fromIntegral count) $ do
+            newK <- lift $ sampleWithoutReplacement n k howMany
+            let newPat = (pattern & ix queryIndex %~ (\v -> v - newK)) ++ [newK]
+            yield (newPat, 1)
 
 sampleWithoutReplacement :: Int -> Int -> Int -> Script Int
 sampleWithoutReplacement n k howMany = go n k howMany 0

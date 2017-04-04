@@ -1,5 +1,5 @@
 import Rarecoal.FreqSum (FreqSumEntry(..), parseFreqSum, FreqSumHeader(..))
-import Rarecoal.RareAlleleHistogram (RareAlleleHistogram(..), SitePattern(..), setNrCalledSites, showHistogram)
+import Rarecoal.RareAlleleHistogram (RareAlleleHistogram(..), SitePattern(..), showHistogram)
 
 import Control.Error (scriptIO, runScript, tryRight)
 import Control.Foldl (purely, Fold(..))
@@ -41,22 +41,14 @@ runWithOptions :: MyOpts -> IO ()
 runWithOptions (MyOpts maxM nrCalledSites removeMissing) = runScript $ do
     (FreqSumHeader names counts, entries) <- parseFreqSum stdin
     (patternHist, _) <- purely P.fold' buildPatternHist entries
-    let hist = RareAlleleHistogram names counts 0 maxM [] [] patternHist
-    hist' <- tryRight $ setNrCalledSites nrCalledSites hist
-    outs <- tryRight $ showHistogram hist'
+    let hist = RareAlleleHistogram names counts 0 maxM [] [] nrCalledSites patternHist
+    outs <- tryRight $ showHistogram hist
     scriptIO $ T.putStr outs
   where
     buildPatternHist = Fold step Map.empty id
     step m fse =
-        case mkPat fse of
-            Pattern pat ->
-                if removeMissing
-                then
-                    if any (<0) pat then m else Map.insertWith (\_ v -> v + 1) (Pattern pat) 1 m
-                else
-                    let newPat = map (\p -> max 0 p) pat
-                    in  Map.insertWith (\_ v -> v + 1) (Pattern newPat) 1 m
-            Higher -> Map.insertWith (\_ v -> v + 1) Higher 1 m
-    mkPat = makePattern . fsCounts
-    makePattern vec = if isHigherAF vec then Higher else Pattern vec
-    isHigherAF = (>maxM) . sum
+        let pat = fsCounts fse
+        in  if removeMissing && any (<0) pat then m
+            else
+                let newPat = map (\p -> max 0 p) pat
+                in  if sum newPat <= maxM then Map.insertWith (\_ v -> v + 1) newPat 1 m else m

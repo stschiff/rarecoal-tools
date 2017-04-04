@@ -9,9 +9,12 @@ import Data.Monoid ((<>))
 main :: IO ()
 main = OP.execParser parser >>= runWithOptions
   where
-    parser = OP.info (OP.helper <*> OP.some parseFileName) (OP.fullDesc <> OP.progDesc "Tool to combine multiple histogram files, for help add option -h")
+    parser = OP.info (OP.helper <*> OP.some parseFileName)
+        (OP.fullDesc <> OP.progDesc "Tool to combine multiple histogram files, for help add \
+            \option -h")
     parseFileName =
-        OP.strArgument $ OP.metavar "histogram_file" <> OP.help "histogram file, put as many as you want to add up"
+        OP.strArgument $ OP.metavar "histogram_file" <> OP.help "histogram file, put as many as \
+            \you want to add up"
     
 runWithOptions :: [FilePath] -> IO ()
 runWithOptions fileNames = runScript $ do
@@ -30,4 +33,10 @@ addHistograms hist1 hist2 = do
     when (raNVec hist1 /= raNVec hist2) $ Left "histograms have different NVecs"
     when (raMaxAf hist1 /= raMaxAf hist2) $ Left "histograms have different maxAf"
     when (raConditionOn hist1 /= raConditionOn hist2) $ Left "histograms differ in conditioning"
-    return $ hist1 {raCounts = Map.unionWith (+) (raCounts hist1) (raCounts hist2)}
+    when (raExcludePatterns hist1 /= raExcludePatterns hist2) $
+        Left "histograms differ in exclude patterns"
+    let newTotalNrSites = raTotalNrSites hist1 + raTotalNrSites hist2
+    return $ hist1 {
+        raCounts = Map.unionWith (+) (raCounts hist1) (raCounts hist2),
+        raTotalNrSites = newTotalNrSites
+    }

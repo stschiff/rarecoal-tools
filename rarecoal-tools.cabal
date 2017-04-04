@@ -125,7 +125,6 @@ executable ms2hist
                         split,
                         containers,
                         optparse-applicative,
-                        lens,
                         errors,
                         bytestring,
                         text
