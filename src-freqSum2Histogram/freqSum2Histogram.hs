@@ -41,7 +41,7 @@ runWithOptions :: MyOpts -> IO ()
 runWithOptions (MyOpts maxM nrCalledSites removeMissing) = runScript $ do
     (FreqSumHeader names counts, entries) <- parseFreqSum stdin
     (patternHist, _) <- purely P.fold' buildPatternHist entries
-    let hist = RareAlleleHistogram names counts 0 maxM [] patternHist
+    let hist = RareAlleleHistogram names counts 0 maxM [] [] patternHist
     hist' <- tryRight $ setNrCalledSites nrCalledSites hist
     outs <- tryRight $ showHistogram hist'
     scriptIO $ T.putStr outs

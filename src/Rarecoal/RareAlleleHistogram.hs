@@ -23,6 +23,7 @@ data RareAlleleHistogram = RareAlleleHistogram {
     raMinAf :: Int,
     raMaxAf :: Int,
     raConditionOn :: [Int],
+    raExcludePatterns :: [[Int]],
     raCounts :: Map.Map SitePattern Int64
 }
 
@@ -33,7 +34,7 @@ instance Show SitePattern where
 
 showHistogram :: RareAlleleHistogram -> Either String T.Text
 showHistogram hist = do
-    assertErr "can only print histogram with minAf=0 due to format-legacy" $ raMinAf hist == 0
+    assertErr "can only print histogram with minAf=1 due to format-legacy" $ raMinAf hist == 0
     assertErr "can only print histogram with no conditioning due to format-legacy" $ length (raConditionOn hist) == 0
     let head0 = T.concat ["NAMES=", T.pack . intercalate "," . raNames $ hist]
         head1 = T.concat ["N=", T.pack . intercalate "," . map show . raNVec $ hist]
@@ -60,7 +61,7 @@ readHistogramFromHandle handle = do
     
 parseHistogram :: A.Parser RareAlleleHistogram
 parseHistogram = RareAlleleHistogram <$> (map T.unpack <$> parseNames) <*> parseNVec <*> pure 0 <*> 
-                                         parseMaxM <*> pure [] <*> parseBody
+                                         parseMaxM <*> pure [] <*> pure [] <*> parseBody
   where
     parseNames = A.string "NAMES=" *> name `A.sepBy1` A.char ',' <* A.endOfLine
     name = A.takeWhile1 (\c -> isAlphaNum c || c == '_')

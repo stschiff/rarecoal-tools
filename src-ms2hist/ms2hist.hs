@@ -51,4 +51,4 @@ makeHist nVec maxAf names s = do
         toPattern p = if pred_ p then Pattern p else Higher
         insert m k = M.insertWith (+) k 1 m
         counts = foldl insert M.empty $ map toPattern freqSums
-    return $ RareAlleleHistogram names nVec 0 maxAf [] counts
+    return $ RareAlleleHistogram names nVec 0 maxAf [] [] counts
