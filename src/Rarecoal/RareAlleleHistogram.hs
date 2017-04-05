@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Rarecoal.RareAlleleHistogram (RareAlleleHistogram(..), readHistogramFromHandle,
-                            SitePattern, readHistogram, showHistogram) where
+                            SitePattern, readHistogram, showHistogram, showSitePattern) where
 
 import Control.Applicative (optional)
 import Control.Error (Script, scriptIO, assertErr, throwE)
