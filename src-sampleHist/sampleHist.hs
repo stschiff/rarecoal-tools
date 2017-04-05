@@ -3,7 +3,7 @@
 import Rarecoal.RareAlleleHistogram (readHistogramFromHandle, showHistogram, 
                                      RareAlleleHistogram(..), SitePattern)
 
-import Control.Error (runScript, tryRight, errLn, scriptIO, Script, tryJust, tryAssert)
+import Control.Error (runScript, tryRight, errLn, scriptIO, Script, tryJust)
 import Control.Foldl (impurely, FoldM(..))
 import Control.Lens ((&), (%~), ix)
 import Control.Monad (replicateM_, when)

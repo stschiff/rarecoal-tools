@@ -1,11 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Rarecoal.RareAlleleHistogram (RareAlleleHistogram(..), readHistogramFromHandle,
-                            SitePattern(..), readHistogram, showHistogram) where
+                            SitePattern, readHistogram, showHistogram) where
 
-import Control.Applicative ((<|>), optional)
-import Control.Error (Script, scriptIO, assertErr, throwE, justErr)
-import Control.Monad (when)
+import Control.Applicative (optional)
+import Control.Error (Script, scriptIO, assertErr, throwE)
 import Control.Monad.Trans.State.Strict (evalStateT)
 import qualified Data.Attoparsec.Text as A
 import Data.Char (isAlphaNum)

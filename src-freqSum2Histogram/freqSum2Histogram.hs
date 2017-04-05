@@ -1,13 +1,13 @@
 import Rarecoal.FreqSum (FreqSumEntry(..), parseFreqSum, FreqSumHeader(..))
-import Rarecoal.RareAlleleHistogram (RareAlleleHistogram(..), SitePattern(..), showHistogram)
+import Rarecoal.RareAlleleHistogram (RareAlleleHistogram(..), SitePattern, showHistogram)
 
-import Control.Error (scriptIO, runScript, tryRight, errLn)
+import Control.Error (scriptIO, runScript, tryRight)
 import Control.Foldl (purely, Fold(..), list)
 import Data.Int (Int64)
 import qualified Data.Map.Strict as Map
 import Data.Monoid ((<>))
 import qualified Data.Text.IO as T
-import Debug.Trace (trace)
+-- import Debug.Trace (trace)
 import Lens.Family2 (view)
 import qualified Options.Applicative as OP
 import Pipes.Group (groupsBy, folds)
@@ -99,7 +99,7 @@ computeJackknife effectiveChromLengths countsPerChrom =
                                   (mj, thetaMinusJ) <- zip m thetaMinus]
         h = [n / mj | mj <- m]
         tau = [hj * theta - (hj - 1.0) * thetaMinusJ | (hj, thetaMinusJ) <- zip h thetaMinus]
-        sigmaSquare = sum [(tauJ - thetaJ) ^ 2 / (hj - 1.0) | (tauJ, hj) <- zip tau h] / g
+        sigmaSquare = sum [(tauJ - thetaJ) ^ (2 :: Int) / (hj - 1.0) | (tauJ, hj) <- zip tau h] / g
     in  (theta, sqrt sigmaSquare)
 
 getNrSites :: Bool -> Fold FreqSumEntry Int64
