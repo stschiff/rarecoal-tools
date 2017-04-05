@@ -3,10 +3,10 @@
 import Rarecoal.RareAlleleHistogram (readHistogramFromHandle, showHistogram, 
                                      RareAlleleHistogram(..), SitePattern)
 
-import Control.Error (runScript, tryRight, errLn, scriptIO, Script, tryJust)
+import Control.Error (runScript, tryRight, errLn, scriptIO, Script, tryJust, tryAssert)
 import Control.Foldl (impurely, FoldM(..))
 import Control.Lens ((&), (%~), ix)
-import Control.Monad (replicateM_)
+import Control.Monad (replicateM_, when)
 import Control.Monad.Trans.Class (lift)
 import Data.Int (Int64)
 import qualified Data.Map.Strict as M
@@ -47,13 +47,15 @@ runWithOptions (MyOpts name howMany histPath) = runScript $ do
 makeNewHist :: String -> Int -> RareAlleleHistogram -> Script RareAlleleHistogram
 makeNewHist name howMany hist = do
     queryIndex <- tryJust ("could not find name: " ++ name) $ lookup name (zip (raNames hist) [0..])
+    when (raJackknifeEstimates hist /= Nothing) $ do
+        scriptIO $ errLn "handling histograms with jackknife estimates is not yet implemented."
     let histRows = M.toList (raCounts hist)
         nVec = raNVec hist
         patternProducer = mapM_ yield histRows
         sampledProducer = for patternProducer (sampleFromPattern queryIndex howMany nVec)
     (patternMap, _) <- impurely P.foldM' makeMap sampledProducer
     let newNVec = (nVec & ix queryIndex %~ (\v -> v - howMany)) ++ [howMany]
-    return hist {raNVec = newNVec, raCounts = patternMap}
+    return hist {raNVec = newNVec, raCounts = patternMap, raJackknifeEstimates = Nothing}
 
 sampleFromPattern :: Int -> Int -> [Int] -> (SitePattern, Int64) ->
                      Producer (SitePattern, Int64) Script ()

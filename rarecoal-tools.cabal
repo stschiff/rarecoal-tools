@@ -108,7 +108,9 @@ executable freqSum2Histogram
                        pipes-attoparsec,
                        errors,
                        text,
-                       foldl
+                       foldl,
+                       lens-family,
+                       pipes-group
   default-language:    Haskell2010
 
 executable combineHistograms

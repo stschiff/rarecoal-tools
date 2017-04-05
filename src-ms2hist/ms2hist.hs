@@ -47,4 +47,4 @@ makeHist nVec maxAf names nrCalledSites s = do
         freqSums = map getFreqSum loci
         insert m k = if (sum k <= maxAf) then M.insertWith (+) k 1 m else m
         counts = foldl insert M.empty $ freqSums
-    return $ RareAlleleHistogram names nVec 0 maxAf [] [] nrCalledSites counts
+    return $ RareAlleleHistogram names nVec 0 maxAf [] [] nrCalledSites counts Nothing
