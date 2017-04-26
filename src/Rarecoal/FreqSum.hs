@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Rarecoal.FreqSum (parseFreqSum, FreqSumEntry(..), FreqSumHeader(..), printFreqSum) where
+module Rarecoal.FreqSum (parseFreqSum, FreqSumEntry(..), FreqSumHeader(..), printFreqSum, liftErrors) where
 
 import Control.Error (Script, throwE)
 import Control.Monad.IO.Class (MonadIO, liftIO)
@@ -9,9 +9,9 @@ import Control.Monad.Trans.Class (lift)
 import qualified Data.Attoparsec.Text as A
 import Data.Char (isAlphaNum)
 import Data.List (intercalate)
-import Data.Text (unpack)
+import Data.Text (unpack, Text)
 import Pipes (Producer, next, runEffect, (>->))
-import Pipes.Attoparsec (parse, parsed)
+import Pipes.Attoparsec (parse, parsed, ParsingError)
 import qualified Pipes.Prelude as P
 import qualified Pipes.Text.IO as PT
 import System.IO (Handle)
@@ -50,13 +50,14 @@ parseFreqSum handle = do
             throwE msg
         Just (Right h) -> return h
     return (header, parsed parseFreqSumEntry rest >>= liftErrors)
-  where
-    liftErrors res = case res of
-        Left (e, prod) -> do
-            Right (chunk, _) <- lift $ next prod
-            let msg = show e ++ unpack chunk
-            lift . throwE $ msg
-        Right () -> return ()
+
+liftErrors :: Either (ParsingError, Producer Text Script r) () -> Producer a Script ()
+liftErrors res = case res of
+    Left (e, prod) -> do
+        Right (chunk, _) <- lift $ next prod
+        let msg = show e ++ unpack chunk
+        lift . throwE $ msg
+    Right () -> return ()
 
 parseFreqSumHeader :: A.Parser FreqSumHeader
 parseFreqSumHeader = do
