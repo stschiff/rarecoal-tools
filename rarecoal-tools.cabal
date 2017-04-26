@@ -145,5 +145,5 @@ executable filterFreqSum
   hs-source-dirs:       src-filterFreqSum, src-mergeFreqSum
   other-modules:        OrderedZip
   build-depends:        base, pipes, optparse-applicative, rarecoal-tools, errors, pipes-text, 
-                        turtle, attoparsec, pipes-attoparsec, transformers
+                        turtle, attoparsec, pipes-attoparsec, transformers, text
   default-language:     Haskell2010

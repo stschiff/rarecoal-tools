@@ -4,6 +4,7 @@ import Rarecoal.FreqSum (FreqSumEntry(..), parseFreqSum, liftErrors)
 
 import Control.Error (runScript, scriptIO, Script)
 import Control.Monad.Trans.Class (lift)
+import Data.Text (unpack)
 import OrderedZip (orderedZip)
 import qualified Data.Attoparsec.Text as A
 import Pipes (Producer, runEffect, yield, (>->), next)
@@ -11,7 +12,7 @@ import Pipes.Attoparsec (parsed)
 import qualified Pipes.Prelude as P
 import qualified Pipes.Text as PT
 import qualified Pipes.Text.IO as PT
-import System.IO (stdin)
+import System.IO (stdin, IOMode(..), withFile)
 import Turtle hiding (stdin)
 
 type BedEntry = (Int, Int, Int)
@@ -19,12 +20,13 @@ data IntervalStatus = BedBehind | FSwithin | BedAhead
 
 argParser = optPath "bed" 'b' "a bed file that contains the regions to be included"
 
-main = runScript $ do
+main = do
     bedFile <- options "script to filter a freqSum file through a mask" argParser
-    (fsHeader, fsBody) <- parseFreqSum stdin
-    scriptIO $ print fsHeader
-    let bedProd = parsed bedFileParser PT.stdin >>= liftErrors
-    runEffect $ filterThroughBed bedProd fsBody >-> P.print
+    withFile (unpack . format fp $ bedFile) ReadMode $ \h -> runScript $ do
+        (fsHeader, fsBody) <- parseFreqSum stdin
+        scriptIO $ print fsHeader
+        let bedProd = parsed bedFileParser (PT.fromHandle h) >>= liftErrors
+        runEffect $ filterThroughBed bedProd fsBody >-> P.print
 
 filterThroughBed :: Producer BedEntry Script () -> Producer FreqSumEntry Script () ->
     Producer FreqSumEntry Script ()
