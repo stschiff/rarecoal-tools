@@ -1,57 +1,64 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 import Rarecoal.FreqSum (FreqSumEntry(..), parseFreqSum, liftErrors)
-
+import qualified Codec.Compression.GZip as Gzip
 import Control.Error (runScript, scriptIO, Script)
 import Control.Monad.Trans.Class (lift)
+import qualified Data.ByteString.Lazy as BL
+import Data.List (isSuffixOf)
 import Data.Text (unpack)
-import OrderedZip (orderedZip)
+import Data.Text.Lazy.Encoding (decodeUtf8)
 import qualified Data.Attoparsec.Text as A
 import Pipes (Producer, runEffect, yield, (>->), next)
 import Pipes.Attoparsec (parsed)
 import qualified Pipes.Prelude as P
 import qualified Pipes.Text as PT
-import qualified Pipes.Text.IO as PT
-import System.IO (stdin, IOMode(..), withFile)
+import System.IO (stdin)
 import Turtle hiding (stdin)
 
 type BedEntry = (Int, Int, Int)
 data IntervalStatus = BedBehind | FSwithin | BedAhead
 
-argParser = optPath "bed" 'b' "a bed file that contains the regions to be included"
+argParser :: Parser String
+argParser = unpack . format fp <$>
+    optPath "bed" 'b' "a bed file that contains the regions to be included"
 
+main :: IO ()
 main = do
     bedFile <- options "script to filter a freqSum file through a mask" argParser
-    withFile (unpack . format fp $ bedFile) ReadMode $ \h -> runScript $ do
+    lazyBs <- BL.readFile bedFile
+    let decompressedLazyBs = if ".gz" `isSuffixOf` bedFile then Gzip.decompress lazyBs else lazyBs
+        lazyT = decodeUtf8 decompressedLazyBs
+        textProd = PT.fromLazy lazyT
+    runScript $ do
         (fsHeader, fsBody) <- parseFreqSum stdin
         scriptIO $ print fsHeader
-        let bedProd = parsed bedFileParser (PT.fromHandle h) >>= liftErrors
+        let bedProd = parsed bedFileParser textProd >>= liftErrors
         runEffect $ filterThroughBed bedProd fsBody >-> P.print
+
 
 filterThroughBed :: Producer BedEntry Script () -> Producer FreqSumEntry Script () ->
     Producer FreqSumEntry Script ()
 filterThroughBed bedProd fsProd = do
     b <- lift $ next bedProd
     let (bedCurrent, bedRest) = case b of
-            Left r -> error "Bed file empty or not readable"
+            Left _ -> error "Bed file empty or not readable"
             Right r -> r
-    f <- lift $ next fsProd
-    let (fsCurrent, fsRest) = case f of
-            Left r -> error "FreqSum stream empty or not readable"
+    f' <- lift $ next fsProd
+    let (fsCurrent, fsRest) = case f' of
+            Left _ -> error "FreqSum stream empty or not readable"
             Right r -> r
     go bedCurrent fsCurrent bedRest fsRest
   where
     go bedCurrent fsCurrent bedRest fsRest = do
-        let (bedChrom, bedStart, bedEnd) = bedCurrent
-            FreqSumEntry fsChrom' fsPos' _ _ _ = fsCurrent
-            recurseNextBed = do
+        let recurseNextBed = do
                 b <- lift $ next bedRest
                 case b of
                     Left () -> return ()
                     Right (nextBed, bedRest') -> go nextBed fsCurrent bedRest' fsRest
             recurseNextFS = do
-                f <- lift $ next fsRest
-                case f of
+                f' <- lift $ next fsRest
+                case f' of
                     Left () -> return ()
                     Right (nextFS, fsRest') -> go bedCurrent nextFS bedRest fsRest'
         case bedCurrent `checkIntervalStatus` fsCurrent of

@@ -143,7 +143,6 @@ executable concatFreqSum
 executable filterFreqSum
   main-is:              filterFreqSum.hs
   hs-source-dirs:       src-filterFreqSum, src-mergeFreqSum
-  other-modules:        OrderedZip
   build-depends:        base, pipes, optparse-applicative, rarecoal-tools, errors, pipes-text, 
-                        turtle, attoparsec, pipes-attoparsec, transformers, text
+                        turtle, attoparsec, pipes-attoparsec, transformers, text, zlib, bytestring
   default-language:     Haskell2010
