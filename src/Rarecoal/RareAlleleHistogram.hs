@@ -85,7 +85,7 @@ parseHistogram = do
     return $ RareAlleleHistogram names nVec 1 maxM [][] totalNrSites countHist jkHist
   where
     parseNames = A.string "NAMES=" *> name `A.sepBy1` A.char ',' <* A.endOfLine
-    name = A.takeWhile1 (\c -> isAlphaNum c || c == '_')
+    name = A.takeWhile1 (\c -> isAlphaNum c || c == '_' || c == '-')
     parseNVec = A.string "N=" *> A.decimal `A.sepBy1` A.char ',' <* A.endOfLine
     parseMaxM = A.string "MAX_M=" *> A.decimal <* A.endOfLine
     parseTotalNrSites = A.string "TOTAL_SITES=" *> A.decimal <* A.endOfLine
