@@ -1,6 +1,6 @@
 {-# LANGUAGE BangPatterns #-}
 
-import Rarecoal.RareAlleleHistogram (readHistogramFromHandle, showHistogram, 
+import Rarecoal.Formats.RareAlleleHistogram (readHistogramFromHandle, showHistogram,
                                      RareAlleleHistogram(..), SitePattern)
 
 import Control.Error (runScript, tryRight, errLn, scriptIO, Script, tryJust)
@@ -30,7 +30,7 @@ parser :: OP.Parser MyOpts
 parser = MyOpts <$> OP.strOption (OP.short 'n' <> OP.long "name" <>
                             OP.metavar "<NAME>" <> OP.help "the population (by name) from \
                                                             \which to sample")
-                <*> OP.option OP.auto (OP.short 'n' <> OP.long "howMany" <> OP.metavar "<INT>" <> 
+                <*> OP.option OP.auto (OP.short 'n' <> OP.long "howMany" <> OP.metavar "<INT>" <>
                                     OP.help "how many samples should be drawn at each site")
                 <*> OP.strOption (OP.short 'i' <> OP.long "hist" <>
                                     OP.metavar "<path-to-histogram>" <>
@@ -87,13 +87,13 @@ sampleWithoutReplacement n k howMany = go n k howMany 0
 choose :: Int -> Int -> Double
 choose _ 0 = 1
 choose n k = product [fromIntegral (n + 1 - j) / fromIntegral j | j <- [1..k]]
-        
+
 bernoulli :: Double -> Script Bool
-bernoulli p = (<p) <$> scriptIO randomIO 
+bernoulli p = (<p) <$> scriptIO randomIO
 
 makeMap :: FoldM Script (SitePattern, Int64) (M.Map SitePattern Int64)
 makeMap = FoldM step initial extract
   where
     step m (p, c) = return $ M.insertWith (+) p c m
     initial = return M.empty
-    extract = return 
+    extract = return

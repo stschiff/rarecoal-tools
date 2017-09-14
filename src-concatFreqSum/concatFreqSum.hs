@@ -1,4 +1,4 @@
-import Rarecoal.FreqSum (parseFreqSum, printFreqSum)
+import Rarecoal.Formats.FreqSum (parseFreqSum, printFreqSum)
 
 import Control.Error (runScript, tryAssert)
 import Control.Monad (forM_)

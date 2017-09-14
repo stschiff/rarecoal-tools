@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-import Rarecoal.FreqSum (FreqSumEntry(..), FreqSumHeader(..))
+import Rarecoal.Formats.FreqSum (FreqSumEntry(..), FreqSumHeader(..))
 
 import Control.Applicative ((<|>))
 import Control.Error (runScript, scriptIO, Script, throwE, tryRight)
@@ -27,7 +27,7 @@ main = OP.execParser opts >> run
     opts = OP.info (OP.helper <*> pure ()) (OP.progDesc "convert a multi-sample VCF, read from \
                                                          \stdin, into a freqSum file")
 
-run :: IO () 
+run :: IO ()
 run = runScript $ do
     (VCFheader _ names, vcfProd) <- parseVCF stdin
     let fsHeader = FreqSumHeader names (replicate (length names) 2)

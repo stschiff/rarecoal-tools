@@ -1,4 +1,4 @@
-import Rarecoal.FreqSum (FreqSumHeader(..), FreqSumEntry(..), parseFreqSum, printFreqSum)
+import Rarecoal.Formats.FreqSum (FreqSumHeader(..), FreqSumEntry(..), parseFreqSum, printFreqSum)
 
 import Control.Error (runScript, tryAssert, scriptIO, Script, tryJust)
 import Data.Monoid ((<>))

@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Rarecoal.RareAlleleHistogram (RareAlleleHistogram(..), readHistogramFromHandle,
+module Rarecoal.Formats.RareAlleleHistogram (RareAlleleHistogram(..), readHistogramFromHandle,
                             SitePattern, readHistogram, showHistogram, showSitePattern) where
 
 import Control.Applicative (optional)
@@ -69,7 +69,7 @@ readHistogramFromHandle handle = do
         Nothing -> throwE "histogram file exhausted too early"
         Just (Left err) -> throwE $ "Histogram parsing error: " ++ show err
         Just (Right hist) -> return hist
-    
+
 parseHistogram :: A.Parser RareAlleleHistogram
 parseHistogram = do
     names <- map T.unpack <$> parseNames
@@ -93,7 +93,7 @@ parseHistogram = do
 parseBody :: A.Parser [(SitePattern, Int64, Maybe (Double, Double))]
 parseBody = A.many1 patternLine
   where
-    patternLine = (,,) <$> parsePattern <* A.space <*> parseLargeInt <*> optional parseJackknife <* 
+    patternLine = (,,) <$> parsePattern <* A.space <*> parseLargeInt <*> optional parseJackknife <*
         A.endOfLine
     parsePattern = A.decimal `A.sepBy1` A.char ','
     parseLargeInt = read <$> A.many1 A.digit

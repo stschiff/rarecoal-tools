@@ -1,5 +1,5 @@
-import Rarecoal.FreqSum (FreqSumEntry(..), parseFreqSum, FreqSumHeader(..))
-import Rarecoal.RareAlleleHistogram (RareAlleleHistogram(..), SitePattern, showHistogram)
+import Rarecoal.Formats.FreqSum (FreqSumEntry(..), parseFreqSum, FreqSumHeader(..))
+import Rarecoal.Formats.RareAlleleHistogram (RareAlleleHistogram(..), SitePattern, showHistogram)
 
 import Control.Error (scriptIO, runScript, tryRight)
 import Control.Foldl (purely, Fold(..), list)
@@ -56,10 +56,10 @@ runWithOptions (MyOpts maxM nrCalledSites removeMissing jackknife) = runScript $
         nrSites = map snd patternHistsAndLengths
         totalNrSites = sum nrSites
         mergedHist = Map.unionsWith (+) patternHists
-    let jackknifeEstimatesDict = 
+    let jackknifeEstimatesDict =
             if jackknife then
                 let effChromLengths =
-                        [fromIntegral n / fromIntegral totalNrSites * fromIntegral nrCalledSites | 
+                        [fromIntegral n / fromIntegral totalNrSites * fromIntegral nrCalledSites |
                          n <- nrSites]
                 in  Just . Map.fromList $ do
                     key <- Map.keys mergedHist
@@ -68,8 +68,8 @@ runWithOptions (MyOpts maxM nrCalledSites removeMissing jackknife) = runScript $
                             computeJackknife effChromLengths countsPerChromosome
                     return (key, (jackknifeMean, jackknifeVar))
             else Nothing
-            
-    let hist = RareAlleleHistogram names counts 1 maxM [] [] nrCalledSites mergedHist 
+
+    let hist = RareAlleleHistogram names counts 1 maxM [] [] nrCalledSites mergedHist
                                    jackknifeEstimatesDict
     outs <- tryRight $ showHistogram hist
     scriptIO $ T.putStr outs
@@ -84,7 +84,7 @@ buildPatternHist removeMissing maxM = Fold step Map.empty id
                 let newPat = map (\p -> max 0 p) pat
                 in  if sum newPat <= maxM then Map.insertWith (\_ v -> v + 1) newPat 1 m else m
 
--- see F.M.T.A. Busing, E. Meijer, and R. van der Leeden. Delete-m jackknife for unequal 
+-- see F.M.T.A. Busing, E. Meijer, and R. van der Leeden. Delete-m jackknife for unequal
 -- Statistics and Computing, 9:3–8, 1999.
 computeJackknife :: [Double] -> [Int64] -> (Double, Double)
 computeJackknife effectiveChromLengths countsPerChrom =
@@ -111,4 +111,3 @@ getNrSites removeMissing = Fold step 0 id
             else
                 let newPat = map (\p -> max 0 p) pat
                 in  if sum newPat > 0 then count + 1 else count
-        

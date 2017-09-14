@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-import Rarecoal.FreqSum (FreqSumEntry(..), parseFreqSum, liftErrors)
+import Rarecoal.Formats.FreqSum (FreqSumEntry(..), parseFreqSum, liftErrors)
 import qualified Codec.Compression.GZip as Gzip
 import Control.Error (runScript, scriptIO, Script)
 import Control.Monad.Trans.Class (lift)
@@ -67,7 +67,7 @@ filterThroughBed bedProd fsProd = do
             FSwithin -> do
                 yield fsCurrent
                 recurseNextFS
-        
+
 checkIntervalStatus :: BedEntry -> FreqSumEntry -> IntervalStatus
 checkIntervalStatus (bedChrom, bedStart, bedEnd) (FreqSumEntry fsChrom' fsPos' _ _ _) =
     case bedChrom `compare` fsChrom' of
@@ -77,9 +77,7 @@ checkIntervalStatus (bedChrom, bedStart, bedEnd) (FreqSumEntry fsChrom' fsPos' _
                   BedAhead
               else
                   if bedEnd < fsPos' then BedBehind else FSwithin
-        
+
 bedFileParser :: A.Parser BedEntry
-bedFileParser = (,,) <$> A.decimal <* A.skipSpace <*> A.decimal <* A.skipSpace <*> A.decimal <* 
+bedFileParser = (,,) <$> A.decimal <* A.skipSpace <*> A.decimal <* A.skipSpace <*> A.decimal <*
     A.endOfLine
-    
-    

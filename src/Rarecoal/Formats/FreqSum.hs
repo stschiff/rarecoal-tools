@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Rarecoal.FreqSum (parseFreqSum, FreqSumEntry(..), FreqSumHeader(..), printFreqSum, liftErrors) where
+module Rarecoal.Formats.FreqSum (parseFreqSum, FreqSumEntry(..), FreqSumHeader(..), printFreqSum, liftErrors) where
 
 import Control.Error (Script, throwE)
 import Control.Monad.IO.Class (MonadIO, liftIO)

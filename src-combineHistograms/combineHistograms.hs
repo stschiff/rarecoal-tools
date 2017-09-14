@@ -1,4 +1,4 @@
-import Rarecoal.RareAlleleHistogram (RareAlleleHistogram(..), showHistogram, readHistogram)
+import Rarecoal.Formats.RareAlleleHistogram (RareAlleleHistogram(..), showHistogram, readHistogram)
 import Control.Monad (foldM, when)
 import Control.Error (scriptIO, runScript, Script, tryRight, throwE, errLn)
 import qualified Data.Text.IO as T
@@ -15,7 +15,7 @@ main = OP.execParser parser >>= runWithOptions
     parseFileName =
         OP.strArgument $ OP.metavar "histogram_file" <> OP.help "histogram file, put as many as \
             \you want to add up"
-    
+
 runWithOptions :: [FilePath] -> IO ()
 runWithOptions fileNames = runScript $ do
     newHist <- combine fileNames

@@ -1,5 +1,5 @@
 import OrderedZip (orderedZip)
-import Rarecoal.FreqSum (FreqSumEntry(..), FreqSumHeader(..), parseFreqSum, printFreqSum)
+import Rarecoal.Formats.FreqSum (FreqSumEntry(..), FreqSumHeader(..), parseFreqSum, printFreqSum)
 
 import Control.Error (runScript, scriptIO, Script, err, throwE)
 import Data.Maybe (fromJust, isJust)
@@ -44,7 +44,7 @@ freqSumCombine _ n2 (Just fs1, Nothing) =
     return . Just $ fs1 {fsCounts = fsCounts fs1 ++ replicate n2 0}
 freqSumCombine n1 _ (Nothing, Just fs2) =
     return . Just $ fs2 {fsCounts = replicate n1 0 ++ fsCounts fs2}
-freqSumCombine _ n2 (Just fs1, Just fs2) = 
+freqSumCombine _ n2 (Just fs1, Just fs2) =
     if fsRef fs1 == fsRef fs2 && fsAlt fs1 == fsAlt fs2 then
         return . Just $ fs1 {fsCounts = fsCounts fs1 ++ fsCounts fs2}
     else

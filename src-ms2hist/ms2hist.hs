@@ -4,7 +4,7 @@ import Data.List.Split (splitPlaces)
 import Data.Monoid ((<>))
 import qualified Data.Map as M
 import qualified Options.Applicative as OP
-import Rarecoal.RareAlleleHistogram(RareAlleleHistogram(..), showHistogram)
+import Rarecoal.Formats.RareAlleleHistogram(RareAlleleHistogram(..), showHistogram)
 import Control.Error (runScript, scriptIO, assertErr, tryRight)
 import Data.Int (Int64)
 import Data.List.Split (splitOn)
@@ -18,9 +18,9 @@ main = OP.execParser opts >>= mainWithOptions
   where
     parser =
         MyOpts <$> OP.option (map read . splitOn "," <$> OP.str)
-            (OP.short 'n' <> OP.long "nVec" <> OP.metavar "N1,N2,..." <> 
+            (OP.short 'n' <> OP.long "nVec" <> OP.metavar "N1,N2,..." <>
                 OP.help "comma-separated list of the number in each subgroup") <*>
-            OP.option OP.auto (OP.short 'm' <> OP.long "maxM" <> OP.metavar "<INT>" <> 
+            OP.option OP.auto (OP.short 'm' <> OP.long "maxM" <> OP.metavar "<INT>" <>
                 OP.help "maximum allele count") <*>
             OP.option OP.auto (OP.short 'N' <> OP.long "nrCalledSites" <>
                 OP.metavar "INT" <> OP.help "total length of the genome simulated (not just \

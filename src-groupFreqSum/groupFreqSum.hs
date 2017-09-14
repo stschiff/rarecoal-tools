@@ -1,4 +1,4 @@
-import Rarecoal.FreqSum (FreqSumEntry(..), parseFreqSum, FreqSumHeader(..), printFreqSum)
+import Rarecoal.Formats.FreqSum (FreqSumEntry(..), parseFreqSum, FreqSumHeader(..), printFreqSum)
 
 import Control.Error (runScript, tryRight, assertErr)
 import Data.List.Split (splitPlaces, splitOn)
@@ -18,7 +18,7 @@ main = OP.execParser opts >>= runWithOptions
 
 parser :: OP.Parser MyOpts
 parser = MyOpts <$> OP.option OP.auto (OP.short 'g' <> OP.long "groups" <>
-                                       OP.metavar "[NGROUP1,NGROUP2]" <> 
+                                       OP.metavar "[NGROUP1,NGROUP2]" <>
                                        OP.help "comma-separated list of numbers that \
                                        \specify how to join sample or groups, surrounded by \
                                        \square brackets. Example: -n [20,20,1] specifies \
