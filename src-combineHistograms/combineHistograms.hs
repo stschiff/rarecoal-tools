@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 import Rarecoal.Formats.RareAlleleHistogram (RareAlleleHistogram(..), showHistogram, readHistogram)
 import Control.Monad (foldM, when)
 import Control.Error (scriptIO, runScript, Script, tryRight, throwE, errLn)

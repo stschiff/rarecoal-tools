@@ -1,8 +1,11 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 import Rarecoal.Formats.FreqSum (FreqSumEntry(..), parseFreqSum, FreqSumHeader(..), printFreqSum)
 
 import Control.Error (runScript, tryRight, assertErr)
 import Data.List.Split (splitPlaces, splitOn)
 import Data.Monoid ((<>))
+import qualified Data.Text as T
 import qualified Options.Applicative as OP
 import Pipes ((>->))
 import qualified Pipes.Prelude as P
@@ -40,7 +43,7 @@ runWithOptions (MyOpts groups missing newNames) = runScript $ do
         newEntries = entries >-> P.mapM (tryRight . groupFreqSum groups missing)
     printFreqSum (FreqSumHeader newNames newCounts, newEntries)
 
-groupFreqSum :: [Int] -> Bool -> FreqSumEntry -> Either String FreqSumEntry
+groupFreqSum :: [Int] -> Bool -> FreqSumEntry -> Either T.Text FreqSumEntry
 groupFreqSum groups missing fs = do
     assertErr "number of samples doesn't match nVec" $ sum groups == length (fsCounts fs)
     let newCounts = map sum' . splitPlaces groups $ fsCounts fs

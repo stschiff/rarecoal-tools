@@ -1,5 +1,9 @@
 flags: {}
 packages:
-- '.'
+- location: .
+- location:
+    git: https://github.com/stschiff/rarecoal-formats.git
+    commit: 6330fdf833b93ef5db1420a91c372efffdb0b535
+  extra-dep: true
 extra-deps: []
-resolver: lts-7.0
+resolver: lts-9.5
