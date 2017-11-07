@@ -1,5 +1,4 @@
-{-# LANGUAGE TemplateHaskell #-}
-
+{-# LANGUAGE OverloadedStrings #-}
 import Data.List.Split (splitPlaces)
 import Data.Monoid ((<>))
 import qualified Data.Map as M
@@ -10,6 +9,7 @@ import Data.Int (Int64)
 import Data.List.Split (splitOn)
 import qualified Data.ByteString.Lazy.Char8 as B
 import qualified Data.Text.IO as T
+import Data.Text (Text)
 
 data MyOpts = MyOpts [Int] Int Int64 [String]
 
@@ -39,7 +39,7 @@ mainWithOptions (MyOpts nVec maxAf nrCalledSites names) = runScript $
                            >>= tryRight . showHistogram
                            >>= scriptIO . T.putStr
 
-makeHist :: [Int] -> Int -> [String] -> Int64 -> B.ByteString -> Either String RareAlleleHistogram
+makeHist :: [Int] -> Int -> [String] -> Int64 -> B.ByteString -> Either Text RareAlleleHistogram
 makeHist nVec maxAf names nrCalledSites s = do
     let loci = B.transpose . B.lines $ s
     assertErr "nVec doesn't sum up to correct number of samples" $ B.length (head loci) == sum (map fromIntegral nVec)

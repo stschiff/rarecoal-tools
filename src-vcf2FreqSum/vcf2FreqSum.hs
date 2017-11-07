@@ -41,14 +41,14 @@ parseVCF handle = do
     (res, rest) <- runStateT (parse parseVCFheader) prod
     header <- case res of
         Nothing -> throwE "vcf file exhausted"
-        Just (Left e) -> throwE ("vcf file parsing error: " ++ show e)
+        Just (Left e) -> throwE (T.pack $ "vcf file parsing error: " ++ show e)
         Just (Right h) -> return h
     return (header, parsed parseVCFentry rest >>= liftErrors)
   where
     liftErrors res = case res of
         Left (e, prod) -> do
             Right (chunk, _) <- lift $ next prod
-            let msg = show e ++ T.unpack chunk
+            let msg = T.pack $ show e ++ T.unpack chunk
             lift . throwE $ msg
         Right () -> return ()
 
@@ -105,12 +105,14 @@ processVCFentry lastPos (VCFentry chrom pos ref alt genotypes) = do
         scriptIO $ print fs
         return pos
 
-parseChrom :: T.Text -> Either String Int
+parseChrom :: T.Text -> Either T.Text Int
 parseChrom chrom =
     case strippedChrom of
         "X" -> Right 23
         "Y" -> Right 24
         "MT" -> Right 90
-        s -> fst <$> T.decimal s
+        s -> case T.decimal s of
+            Left msg -> Left (T.pack msg)
+            Right (s, _) -> Right s
   where
     strippedChrom = if T.take 3 chrom == "chr" then T.drop 3 chrom else chrom

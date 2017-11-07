@@ -1,13 +1,15 @@
+{-# LANGUAGE OverloadedStrings #-}
 import OrderedZip (orderedZip)
 import Rarecoal.Formats.FreqSum (FreqSumEntry(..), FreqSumHeader(..), parseFreqSum, printFreqSum)
 
-import Control.Error (runScript, scriptIO, Script, err, throwE)
+import Control.Error (runScript, scriptIO, Script, errLn, throwE)
 import Data.Maybe (fromJust, isJust)
 import Data.Monoid ((<>))
 import qualified Options.Applicative as OP
 import Pipes ((>->))
 import qualified Pipes.Prelude as P
 import System.IO (openFile, IOMode(..), hClose, stdin)
+import Turtle (format, d, (%))
 
 data MyOpts = MyOpts FilePath FilePath
 
@@ -49,13 +51,14 @@ freqSumCombine _ n2 (Just fs1, Just fs2) =
         return . Just $ fs1 {fsCounts = fsCounts fs1 ++ fsCounts fs2}
     else
         if fsRef fs1 == fsAlt fs2 && fsAlt fs1 == fsRef fs2 then do
-            scriptIO . err $ "flipping alleles in position " ++ show (fsChrom fs1) ++ ":" ++
-                show (fsPos fs1)
+            scriptIO . errLn $
+                format ("flipping alleles in position "%d%":"%d) (fsChrom fs1)
+                (fsPos fs1)
             return . Just $ fs1 {fsCounts = fsCounts fs1 ++ flipAlleles (fsCounts fs2)}
         else do
-            scriptIO . err $
-                "skipping position " ++ show (fsChrom fs1) ++ ":" ++ show (fsPos fs1) ++
-                " due to inconsistent alleles"
+            scriptIO . errLn $
+                format ("skipping position "%d%":"%d%
+                " due to inconsistent alleles") (fsChrom fs1) (fsPos fs1)
             return . Just $ fs1 {fsCounts = fsCounts fs1 ++ replicate n2 0}
 freqSumCombine _ _ (Nothing, Nothing) = throwE "should not happen"
 

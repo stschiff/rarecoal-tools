@@ -3,6 +3,7 @@ import Rarecoal.Formats.FreqSum (FreqSumEntry(..), FreqSumHeader(..), parseFreqS
 import Control.Error (runScript, tryJust)
 import Data.List.Split (splitOn)
 import Data.Monoid ((<>))
+import Data.Text (pack)
 import qualified Options.Applicative as OP
 import Pipes ((>->))
 import qualified Pipes.Prelude as P
@@ -30,7 +31,7 @@ runWithOptions (MyOpts names) = runScript $ do
         newHeader = FreqSumHeader names newCounts
     printFreqSum (newHeader, newEntries)
   where
-    findIndex xs x = tryJust ("could not find name: " ++ x) $ x `lookup` zip xs [0..]
+    findIndex xs x = tryJust (pack $ "could not find name: " ++ x) $ x `lookup` zip xs [0..]
 
 selectColumns :: [Int] -> FreqSumEntry -> FreqSumEntry
 selectColumns indices fs =

@@ -1,4 +1,4 @@
-{-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE BangPatterns, OverloadedStrings #-}
 
 import Rarecoal.Formats.RareAlleleHistogram (readHistogramFromHandle, showHistogram,
                                      RareAlleleHistogram(..), SitePattern)
@@ -11,12 +11,14 @@ import Control.Monad.Trans.Class (lift)
 import Data.Int (Int64)
 import qualified Data.Map.Strict as M
 import Data.Monoid ((<>))
+import Data.Text (Text, pack)
 import qualified Data.Text.IO as T
 import qualified Options.Applicative as OP
 import Pipes (yield, for, Producer)
 import qualified Pipes.Prelude as P
 import System.IO (stdin, IOMode(..), openFile)
 import System.Random (randomIO)
+import Turtle (format, (%), s, w)
 
 data MyOpts = MyOpts String Int FilePath
 
@@ -46,7 +48,7 @@ runWithOptions (MyOpts name howMany histPath) = runScript $ do
 
 makeNewHist :: String -> Int -> RareAlleleHistogram -> Script RareAlleleHistogram
 makeNewHist name howMany hist = do
-    queryIndex <- tryJust ("could not find name: " ++ name) $ lookup name (zip (raNames hist) [0..])
+    queryIndex <- tryJust (format ("could not find name: "%s) (pack name)) $ lookup name (zip (raNames hist) [0..])
     when (raJackknifeEstimates hist /= Nothing) $ do
         scriptIO $ errLn "handling histograms with jackknife estimates is not yet implemented."
     let histRows = M.toList (raCounts hist)
@@ -60,7 +62,7 @@ makeNewHist name howMany hist = do
 sampleFromPattern :: Int -> Int -> [Int] -> (SitePattern, Int64) ->
                      Producer (SitePattern, Int64) Script ()
 sampleFromPattern queryIndex howMany nVec (pattern, count) = do
-    lift . scriptIO $ errLn ("processing pattern " ++ show pattern)
+    lift . scriptIO $ errLn (format ("processing pattern "%w) pattern)
     let n = nVec !! queryIndex
         k = pattern !! queryIndex
     if k == 0 then

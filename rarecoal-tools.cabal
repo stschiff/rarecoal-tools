@@ -45,7 +45,7 @@ executable selectInFreqSum
                        pipes-text,
                        pipes,
                        pipes-attoparsec,
-                       errors, split
+                       errors, split, text
   default-language:    Haskell2010
 
 executable sampleHist
@@ -60,7 +60,8 @@ executable sampleHist
                        transformers,
                        containers,
                        random,
-                       text
+                       text,
+                       turtle
   default-language:    Haskell2010
  -- ghc-options:         "-with-rtsopts=-A10m -K100m"
 
@@ -85,7 +86,8 @@ executable mergeFreqSum
                        transformers,
                        pipes-attoparsec,
                        pipes-text,
-                       errors
+                       errors,
+                       turtle
   other-modules:       OrderedZip
   default-language:    Haskell2010
 
