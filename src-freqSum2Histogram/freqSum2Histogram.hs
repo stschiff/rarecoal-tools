@@ -1,5 +1,5 @@
-import Rarecoal.Formats.FreqSum (FreqSumEntry(..), parseFreqSum, FreqSumHeader(..))
-import Rarecoal.Formats.RareAlleleHistogram (RareAlleleHistogram(..), SitePattern, showHistogram)
+import SequenceFormats.FreqSum (FreqSumEntry(..), parseFreqSum, FreqSumHeader(..))
+import SequenceFormats.RareAlleleHistogram (RareAlleleHistogram(..), SitePattern, showHistogram)
 
 import Control.Error (scriptIO, runScript, tryRight)
 import Control.Foldl (purely, Fold(..), list)

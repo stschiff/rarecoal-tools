@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-import Rarecoal.Formats.FreqSum (parseFreqSum, printFreqSum)
+import SequenceFormats.FreqSum (parseFreqSum, printFreqSum)
 
 import Control.Error (runScript, tryAssert)
 import Control.Monad (forM_)

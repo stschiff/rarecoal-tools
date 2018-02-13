@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-import Rarecoal.Formats.FreqSum (FreqSumEntry(..), parseFreqSum, FreqSumHeader(..), printFreqSum)
+import SequenceFormats.FreqSum (FreqSumEntry(..), parseFreqSum, FreqSumHeader(..), printFreqSum)
 
 import Control.Error (runScript, tryRight, assertErr)
 import Data.List.Split (splitPlaces, splitOn)

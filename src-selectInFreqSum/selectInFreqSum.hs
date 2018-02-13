@@ -1,4 +1,4 @@
-import Rarecoal.Formats.FreqSum (FreqSumEntry(..), FreqSumHeader(..), parseFreqSum, printFreqSum)
+import SequenceFormats.FreqSum (FreqSumEntry(..), FreqSumHeader(..), parseFreqSum, printFreqSum)
 
 import Control.Error (runScript, tryJust)
 import Data.List.Split (splitOn)

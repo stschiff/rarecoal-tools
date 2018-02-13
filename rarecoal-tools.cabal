@@ -2,7 +2,7 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 name:                rarecoal-tools
-version:             1.1.3
+version:             1.1.4
 license:             GPL-3
 license-file:        LICENSE
 author:              Stephan Schiffels
@@ -14,7 +14,7 @@ cabal-version:       >=1.10
 executable vcf2FreqSum
   main-is:             vcf2FreqSum.hs
   hs-source-dirs:      src-vcf2FreqSum
-  build-depends:       base, rarecoal-formats,
+  build-depends:       base, sequence-formats,
                        text,
                        errors,
                        attoparsec,
@@ -28,7 +28,7 @@ executable vcf2FreqSum
 executable groupFreqSum
   main-is:             groupFreqSum.hs
   hs-source-dirs:      src-groupFreqSum
-  build-depends:       base, rarecoal-formats,
+  build-depends:       base, sequence-formats,
                        optparse-applicative,
                        pipes-text,
                        pipes, text,
@@ -40,7 +40,7 @@ executable groupFreqSum
 executable selectInFreqSum
   main-is:             selectInFreqSum.hs
   hs-source-dirs:      src-selectInFreqSum
-  build-depends:       base, rarecoal-formats,
+  build-depends:       base, sequence-formats,
                        optparse-applicative,
                        pipes-text,
                        pipes,
@@ -51,7 +51,7 @@ executable selectInFreqSum
 executable sampleHist
   main-is:             sampleHist.hs
   hs-source-dirs:      src-sampleHist
-  build-depends:       base, rarecoal-formats,
+  build-depends:       base, sequence-formats,
                        optparse-applicative,
                        errors,
                        lens,
@@ -68,7 +68,7 @@ executable sampleHist
 executable downSampleFreqSum
   main-is:             downSampleFreqSum.hs
   hs-source-dirs:      src-downSampleFreqSum
-  build-depends:       base, rarecoal-formats,
+  build-depends:       base, sequence-formats,
                        optparse-applicative,
                        pipes-text,
                        pipes,
@@ -80,7 +80,7 @@ executable downSampleFreqSum
 executable mergeFreqSum
   main-is:             mergeFreqSum.hs
   hs-source-dirs:      src-mergeFreqSum
-  build-depends:       base, rarecoal-formats,
+  build-depends:       base, sequence-formats,
                        optparse-applicative,
                        pipes,
                        transformers,
@@ -94,7 +94,7 @@ executable mergeFreqSum
 executable freqSum2Histogram
   main-is:             freqSum2Histogram.hs
   hs-source-dirs:      src-freqSum2Histogram
-  build-depends:       base, rarecoal-formats,
+  build-depends:       base, sequence-formats,
                        containers,
                        optparse-applicative,
                        pipes-text,
@@ -110,14 +110,14 @@ executable freqSum2Histogram
 executable combineHistograms
   main-is:             combineHistograms.hs
   hs-source-dirs:      src-combineHistograms
-  build-depends:       base, rarecoal-formats, errors, text, optparse-applicative, pipes-text, pipes,
+  build-depends:       base, sequence-formats, errors, text, optparse-applicative, pipes-text, pipes,
                        pipes-attoparsec, errors, random, containers
   default-language:    Haskell2010
 
 executable ms2hist
   main-is:              ms2hist.hs
   hs-source-dirs:       src-ms2hist
-  build-depends:        base, rarecoal-formats,
+  build-depends:        base, sequence-formats,
                         split,
                         containers,
                         optparse-applicative,
@@ -130,13 +130,13 @@ executable ms2hist
 executable concatFreqSum
   main-is:              concatFreqSum.hs
   hs-source-dirs:       src-concatFreqSum
-  build-depends:        base, pipes, transformers, optparse-applicative, rarecoal-formats, errors,
+  build-depends:        base, pipes, transformers, optparse-applicative, sequence-formats, errors,
                         managed
   default-language:     Haskell2010
 
 executable filterFreqSum
   main-is:              filterFreqSum.hs
   hs-source-dirs:       src-filterFreqSum, src-mergeFreqSum
-  build-depends:        base, pipes, optparse-applicative, rarecoal-formats, errors, pipes-text,
+  build-depends:        base, pipes, optparse-applicative, sequence-formats, errors, pipes-text,
                         turtle, attoparsec, pipes-attoparsec, transformers, text, zlib, bytestring
   default-language:     Haskell2010

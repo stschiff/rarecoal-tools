@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-import Rarecoal.Formats.FreqSum (FreqSumEntry(..), parseFreqSum, liftErrors)
+import SequenceFormats.FreqSum (FreqSumEntry(..), parseFreqSum, liftErrors)
 import qualified Codec.Compression.GZip as Gzip
 import Control.Error (runScript, scriptIO, Script)
 import Control.Monad.Trans.Class (lift)

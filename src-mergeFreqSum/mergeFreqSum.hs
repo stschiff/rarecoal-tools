@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 import OrderedZip (orderedZip)
-import Rarecoal.Formats.FreqSum (FreqSumEntry(..), FreqSumHeader(..), parseFreqSum, printFreqSum)
+import SequenceFormats.FreqSum (FreqSumEntry(..), FreqSumHeader(..), parseFreqSum, printFreqSum)
 
 import Control.Error (runScript, scriptIO, Script, errLn, throwE)
 import Data.Maybe (fromJust, isJust)

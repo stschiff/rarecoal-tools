@@ -3,7 +3,7 @@ import Data.List.Split (splitPlaces)
 import Data.Monoid ((<>))
 import qualified Data.Map as M
 import qualified Options.Applicative as OP
-import Rarecoal.Formats.RareAlleleHistogram(RareAlleleHistogram(..), showHistogram)
+import SequenceFormats.RareAlleleHistogram(RareAlleleHistogram(..), showHistogram)
 import Control.Error (runScript, scriptIO, assertErr, tryRight)
 import Data.Int (Int64)
 import Data.List.Split (splitOn)

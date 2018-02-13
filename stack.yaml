@@ -2,8 +2,8 @@ flags: {}
 packages:
 - location: .
 - location:
-    git: https://github.com/stschiff/rarecoal-formats.git
-    commit: 6330fdf833b93ef5db1420a91c372efffdb0b535
+    git: https://github.com/stschiff/sequence-formats.git
+    commit: 69d00bdf33aac3466594c897b19d2434eda51f85
   extra-dep: true
 extra-deps: []
-resolver: lts-9.5
+resolver: lts-10.5

@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-import Rarecoal.Formats.RareAlleleHistogram (RareAlleleHistogram(..), showHistogram, readHistogram)
+import SequenceFormats.RareAlleleHistogram (RareAlleleHistogram(..), showHistogram, readHistogram)
 import Control.Monad (foldM, when)
 import Control.Error (scriptIO, runScript, Script, tryRight, throwE, errLn)
 import qualified Data.Text.IO as T

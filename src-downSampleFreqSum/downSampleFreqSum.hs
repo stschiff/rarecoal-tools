@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-import Rarecoal.Formats.FreqSum (FreqSumHeader(..), FreqSumEntry(..), parseFreqSum, printFreqSum)
+import SequenceFormats.FreqSum (FreqSumHeader(..), FreqSumEntry(..), parseFreqSum, printFreqSum)
 
 import Control.Error (runScript, tryAssert, scriptIO, Script, tryJust)
 import Data.Monoid ((<>))

@@ -1,6 +1,6 @@
 {-# LANGUAGE BangPatterns, OverloadedStrings #-}
 
-import Rarecoal.Formats.RareAlleleHistogram (readHistogramFromHandle, showHistogram,
+import SequenceFormats.RareAlleleHistogram (readHistogramFromHandle, showHistogram,
                                      RareAlleleHistogram(..), SitePattern)
 
 import Control.Error (runScript, tryRight, errLn, scriptIO, Script, tryJust)
