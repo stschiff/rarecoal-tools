@@ -1,22 +1,22 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-import SequenceFormats.FreqSum (FreqSumEntry(..), parseFreqSum, liftErrors)
+import SequenceFormats.FreqSum (FreqSumEntry(..), readFreqSumStdIn, printFreqSumStdOut)
+import SequenceFormats.Utils (liftParsingErrors)
 import qualified Codec.Compression.GZip as Gzip
-import Control.Error (runScript, scriptIO, Script)
+import Control.Error (runScript, Script)
 import Control.Monad.Trans.Class (lift)
 import qualified Data.ByteString.Lazy as BL
+import Data.Char (isSpace)
 import Data.List (isSuffixOf)
-import Data.Text (unpack)
+import Data.Text (unpack, Text)
 import Data.Text.Lazy.Encoding (decodeUtf8)
 import qualified Data.Attoparsec.Text as A
 import Pipes (Producer, runEffect, yield, (>->), next)
 import Pipes.Attoparsec (parsed)
-import qualified Pipes.Prelude as P
 import qualified Pipes.Text as PT
-import System.IO (stdin)
 import Turtle hiding (stdin)
 
-type BedEntry = (Int, Int, Int)
+type BedEntry = (Text, Int, Int)
 data IntervalStatus = BedBehind | FSwithin | BedAhead
 
 argParser :: Parser String
@@ -31,10 +31,9 @@ main = do
         lazyT = decodeUtf8 decompressedLazyBs
         textProd = PT.fromLazy lazyT
     runScript $ do
-        (fsHeader, fsBody) <- parseFreqSum stdin
-        scriptIO $ print fsHeader
-        let bedProd = parsed bedFileParser textProd >>= liftErrors
-        runEffect $ filterThroughBed bedProd fsBody >-> P.print
+        (fsHeader, fsBody) <- readFreqSumStdIn
+        let bedProd = parsed bedFileParser textProd >>= liftParsingErrors
+        runEffect $ filterThroughBed bedProd fsBody >-> printFreqSumStdOut fsHeader
 
 
 filterThroughBed :: Producer BedEntry Script () -> Producer FreqSumEntry Script () ->
@@ -79,5 +78,7 @@ checkIntervalStatus (bedChrom, bedStart, bedEnd) (FreqSumEntry fsChrom' fsPos' _
                   if bedEnd < fsPos' then BedBehind else FSwithin
 
 bedFileParser :: A.Parser BedEntry
-bedFileParser = (,,) <$> A.decimal <* A.skipSpace <*> A.decimal <* A.skipSpace <*> A.decimal <*
+bedFileParser = (,,) <$> chrom <* A.skipSpace <*> A.decimal <* A.skipSpace <*> A.decimal <*
     A.endOfLine
+  where
+    chrom = A.takeTill isSpace

@@ -1,13 +1,14 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-import SequenceFormats.FreqSum (FreqSumHeader(..), FreqSumEntry(..), parseFreqSum, printFreqSum)
+import SequenceFormats.FreqSum (FreqSumHeader(..), FreqSumEntry(..), readFreqSumStdIn, 
+    printFreqSumStdOut)
 
 import Control.Error (runScript, tryAssert, scriptIO, Script, tryJust)
 import Data.Monoid ((<>))
+import Data.Text (pack)
 import qualified Options.Applicative as OP
-import Pipes ((>->))
+import Pipes ((>->), runEffect)
 import qualified Pipes.Prelude as P
-import System.IO (stdin)
 import System.Random (randomIO)
 
 data MyOpts = MyOpts String Int
@@ -27,22 +28,23 @@ parser = MyOpts <$> OP.strArgument (OP.metavar "<NAME>" <> OP.help "the name of 
 
 runWithOptions :: MyOpts -> IO ()
 runWithOptions (MyOpts name nAfter) = runScript $ do
-    (FreqSumHeader names counts, entries) <- parseFreqSum stdin
-    index <- tryJust "did not find name" $ name `lookup` zip names [0..]
+    (FreqSumHeader names counts, entries) <- readFreqSumStdIn
+    index <- tryJust "did not find name" $ (pack name) `lookup` zip names [0..]
     let nBefore = counts !! index
     tryAssert "nBefore has to be >= nAfter" $ nBefore >= nAfter
     let newEntries = entries >-> P.mapM (downSample index nBefore nAfter)
         newCounts = take index counts ++ [nAfter] ++ drop (index + 1) counts
-    printFreqSum (FreqSumHeader names newCounts, newEntries)
+    runEffect $ newEntries >-> printFreqSumStdOut (FreqSumHeader names newCounts)
 
 downSample :: Int -> Int -> Int -> FreqSumEntry -> Script FreqSumEntry
 downSample pos nBefore nAfter fs = do
     tryAssert "position outside bounds" $ pos < length (fsCounts fs)
-    let counts = fsCounts fs !! pos
-    newFS <- if (counts <= 0) then return fs else do
-        newK <- scriptIO $ sampleWithoutReplacement nBefore counts nAfter
-        let newCounts = take pos (fsCounts fs) ++ [newK] ++ drop (pos + 1) (fsCounts fs)
-        return fs {fsCounts = newCounts}
+    newFS <- case fsCounts fs !! pos of
+        Nothing -> return fs 
+        Just c -> do
+            newK <- scriptIO $ sampleWithoutReplacement nBefore c nAfter
+            let newCounts = take pos (fsCounts fs) ++ [Just newK] ++ drop (pos + 1) (fsCounts fs)
+            return fs {fsCounts = newCounts}
     return newFS
 
 sampleWithoutReplacement :: Int -> Int -> Int -> IO Int

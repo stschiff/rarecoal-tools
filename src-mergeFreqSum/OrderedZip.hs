@@ -2,15 +2,15 @@ module OrderedZip (orderedZip) where
 
 import Pipes (Producer, next, yield, lift)
 
-
-orderedZip :: (Monad m) => (a -> b -> Ordering) -> Producer a m r -> Producer b m r -> Producer (Maybe a, Maybe b) m r
+orderedZip :: (Monad m) => (a -> b -> Ordering) -> Producer a m r1 ->
+    Producer b m r2 -> Producer (Maybe a, Maybe b) m (r1, r2)
 orderedZip ord p1 p2 = do
     p1Front <- lift $ next p1
     p2Front <- lift $ next p2
     go ord p1Front p1 p2Front p2
     where
         go ord' p1Front p1' p2Front p2' = case (p1Front, p2Front) of
-            (Left p1r, Left _) -> return p1r
+            (Left p1r, Left p2r) -> return (p1r, p2r)
             (Left _, Right (p2a, p2Rest)) -> do
                 yield (Nothing, Just p2a)
                 p2Front' <- lift $ next p2Rest

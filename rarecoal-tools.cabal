@@ -2,7 +2,7 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 name:                rarecoal-tools
-version:             1.1.4
+version:             1.2.0
 license:             GPL-3
 license-file:        LICENSE
 author:              Stephan Schiffels
@@ -45,7 +45,7 @@ executable selectInFreqSum
                        pipes-text,
                        pipes,
                        pipes-attoparsec,
-                       errors, split, text
+                       errors, split, text, turtle
   default-language:    Haskell2010
 
 executable sampleHist
@@ -73,7 +73,7 @@ executable downSampleFreqSum
                        pipes-text,
                        pipes,
                        pipes-attoparsec,
-                       errors,
+                       errors, text, 
                        random
   default-language:    Haskell2010
 
@@ -82,7 +82,7 @@ executable mergeFreqSum
   hs-source-dirs:      src-mergeFreqSum
   build-depends:       base, sequence-formats,
                        optparse-applicative,
-                       pipes,
+                       pipes, pipes-safe,
                        transformers,
                        pipes-attoparsec,
                        pipes-text,
@@ -131,7 +131,7 @@ executable concatFreqSum
   main-is:              concatFreqSum.hs
   hs-source-dirs:       src-concatFreqSum
   build-depends:        base, pipes, transformers, optparse-applicative, sequence-formats, errors,
-                        managed
+                        managed, pipes-safe, exceptions
   default-language:     Haskell2010
 
 executable filterFreqSum

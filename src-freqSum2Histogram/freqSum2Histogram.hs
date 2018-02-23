@@ -1,18 +1,19 @@
-import SequenceFormats.FreqSum (FreqSumEntry(..), parseFreqSum, FreqSumHeader(..))
+import SequenceFormats.FreqSum (FreqSumEntry(..), readFreqSumStdIn, FreqSumHeader(..))
 import SequenceFormats.RareAlleleHistogram (RareAlleleHistogram(..), SitePattern, showHistogram)
 
 import Control.Error (scriptIO, runScript, tryRight)
 import Control.Foldl (purely, Fold(..), list)
 import Data.Int (Int64)
 import qualified Data.Map.Strict as Map
+import Data.Maybe (maybe)
 import Data.Monoid ((<>))
+import Data.Text (unpack)
 import qualified Data.Text.IO as T
 -- import Debug.Trace (trace)
 import Lens.Family2 (view)
 import qualified Options.Applicative as OP
 import Pipes.Group (groupsBy, folds)
 import qualified Pipes.Prelude as P
-import System.IO (stdin)
 
 data MyOpts = MyOpts Int Int64 Bool Bool
 
@@ -47,7 +48,7 @@ parser = MyOpts <$> OP.option OP.auto (OP.long "maxM"
 
 runWithOptions :: MyOpts -> IO ()
 runWithOptions (MyOpts maxM nrCalledSites removeMissing jackknife) = runScript $ do
-    (FreqSumHeader names counts, entries) <- parseFreqSum stdin
+    (FreqSumHeader names counts, entries) <- readFreqSumStdIn
     let entriesByChromosome = view (groupsBy (\fs1 fs2 -> fsChrom fs1 == fsChrom fs2)) entries
         folder = (,) <$> buildPatternHist removeMissing maxM <*> getNrSites removeMissing
         patternHistAndLengthProd = purely folds folder entriesByChromosome
@@ -69,7 +70,7 @@ runWithOptions (MyOpts maxM nrCalledSites removeMissing jackknife) = runScript $
                     return (key, (jackknifeMean, jackknifeVar))
             else Nothing
 
-    let hist = RareAlleleHistogram names counts 1 maxM [] [] nrCalledSites mergedHist
+    let hist = RareAlleleHistogram (map unpack names) counts 1 maxM [] [] nrCalledSites mergedHist
                                    jackknifeEstimatesDict
     outs <- tryRight $ showHistogram hist
     scriptIO $ T.putStr outs
@@ -79,9 +80,9 @@ buildPatternHist removeMissing maxM = Fold step Map.empty id
   where
     step m fse =
         let pat = fsCounts fse
-        in  if removeMissing && any (<0) pat then m
+        in  if removeMissing && any (==Nothing) pat then m
             else
-                let newPat = map (\p -> max 0 p) pat
+                let newPat = map (maybe 0 id) pat
                 in  if sum newPat <= maxM then Map.insertWith (\_ v -> v + 1) newPat 1 m else m
 
 -- see F.M.T.A. Busing, E. Meijer, and R. van der Leeden. Delete-m jackknife for unequal
@@ -107,7 +108,7 @@ getNrSites removeMissing = Fold step 0 id
   where
     step count fse =
         let pat = fsCounts fse
-        in  if removeMissing && any (<0) pat then count
+        in  if removeMissing && any (==Nothing) pat then count
             else
-                let newPat = map (\p -> max 0 p) pat
+                let newPat = map (maybe 0 id) pat
                 in  if sum newPat > 0 then count + 1 else count

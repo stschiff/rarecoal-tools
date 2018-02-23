@@ -1,13 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
-import SequenceFormats.FreqSum (parseFreqSum, printFreqSum)
+import SequenceFormats.FreqSum (readFreqSumFile, printFreqSumStdOut)
 
-import Control.Error (runScript, tryAssert)
-import Control.Monad (forM_)
-import Control.Monad.Managed (runManaged, managed)
-import Control.Monad.IO.Class (liftIO)
+import Control.Exception (AssertionFailed(..))
+import Control.Monad (when)
+import Control.Monad.Catch (throwM)
 import Data.Monoid ((<>))
 import qualified Options.Applicative as OP
-import System.IO (withFile, IOMode(..))
+import Pipes (runEffect, (>->))
+import Pipes.Safe (runSafeT)
 
 main :: IO ()
 main = OP.execParser parser >>= runWithOptions
@@ -16,11 +16,10 @@ main = OP.execParser parser >>= runWithOptions
     options = OP.some (OP.strArgument (OP.metavar "FILES" <> OP.help "input file(s)"))
 
 runWithOptions :: [FilePath] -> IO ()
-runWithOptions fns = runManaged $ do
-    handles <- sequence [managed (withFile fn ReadMode) | fn <- fns]
-    liftIO . runScript $ do
-        fs <- mapM parseFreqSum handles
-        let (firstHeader:restHeaders) = map fst fs
-        forM_ restHeaders $ \h -> tryAssert "freqSum headers not identical" $ firstHeader == h
-        let newEntries = sequence_ . map snd $ fs
-        printFreqSum (firstHeader, newEntries)
+runWithOptions fns = runSafeT $ do
+    allFreqSums <- mapM readFreqSumFile fns
+    let (firstHeader:restHeaders) = map fst allFreqSums
+        freqSumProds = map snd allFreqSums
+    when (any (/=firstHeader) restHeaders) $
+        throwM (AssertionFailed "freqSum headers not identical")
+    runEffect $ sequence_ freqSumProds >-> printFreqSumStdOut firstHeader

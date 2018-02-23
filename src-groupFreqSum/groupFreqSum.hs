@@ -1,15 +1,15 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-import SequenceFormats.FreqSum (FreqSumEntry(..), parseFreqSum, FreqSumHeader(..), printFreqSum)
+import SequenceFormats.FreqSum (FreqSumEntry(..), readFreqSumStdIn, FreqSumHeader(..), printFreqSumStdOut)
 
 import Control.Error (runScript, tryRight, assertErr)
 import Data.List.Split (splitPlaces, splitOn)
+import Data.Maybe (catMaybes)
 import Data.Monoid ((<>))
 import qualified Data.Text as T
 import qualified Options.Applicative as OP
-import Pipes ((>->))
+import Pipes ((>->), runEffect)
 import qualified Pipes.Prelude as P
-import System.IO (stdin)
 
 data MyOpts = MyOpts [Int] Bool [String]
 
@@ -38,10 +38,10 @@ parser = MyOpts <$> OP.option OP.auto (OP.short 'g' <> OP.long "groups" <>
 
 runWithOptions :: MyOpts -> IO ()
 runWithOptions (MyOpts groups missing newNames) = runScript $ do
-    (FreqSumHeader _ counts, entries) <- parseFreqSum stdin
+    (FreqSumHeader _ counts, entries) <- readFreqSumStdIn
     let newCounts = map sum . splitPlaces groups $ counts
         newEntries = entries >-> P.mapM (tryRight . groupFreqSum groups missing)
-    printFreqSum (FreqSumHeader newNames newCounts, newEntries)
+    runEffect $ newEntries >-> printFreqSumStdOut (FreqSumHeader (map T.pack newNames) newCounts)
 
 groupFreqSum :: [Int] -> Bool -> FreqSumEntry -> Either T.Text FreqSumEntry
 groupFreqSum groups missing fs = do
@@ -51,6 +51,6 @@ groupFreqSum groups missing fs = do
   where
     sum' values =
         if missing then
-            if any (<0) values then -1 else sum values
+            if any (==Nothing) values then Nothing else Just . sum . catMaybes $ values
         else
-            sum $ filter (>=0) values
+            Just . sum . catMaybes $ values
