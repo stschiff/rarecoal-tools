@@ -6,7 +6,7 @@ import SequenceFormats.VCF (readVCFfromStdIn, vcfToFreqSumEntry, VCFheader(..), 
 import Data.IORef (newIORef, readIORef, writeIORef, IORef)
 import qualified Data.Text as T
 import qualified Options.Applicative as OP
-import Pipes (Pipe, runEffect, (>->), await, yield)
+import Pipes (Pipe, runEffect, (>->), cat, for, yield)
 import qualified Pipes.Prelude as P
 
 main :: IO ()
@@ -24,8 +24,7 @@ run = do
         printFreqSumStdOut fsHeader
 
 processVCFentry :: Pipe VCFentry FreqSumEntry IO ()
-processVCFentry = do
-    vcfEntry <- await
+processVCFentry = for cat $ \vcfEntry -> do
     case vcfToFreqSumEntry vcfEntry of
         Left err -> error err
         Right a -> yield a
