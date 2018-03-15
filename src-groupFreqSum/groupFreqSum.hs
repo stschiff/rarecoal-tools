@@ -11,7 +11,7 @@ import qualified Options.Applicative as OP
 import Pipes ((>->), runEffect)
 import qualified Pipes.Prelude as P
 
-data MyOpts = MyOpts [Int] Bool [String]
+data MyOpts = MyOpts [Int] Double [String]
 
 main :: IO ()
 main = OP.execParser opts >>= runWithOptions
@@ -28,29 +28,33 @@ parser = MyOpts <$> OP.option OP.auto (OP.short 'g' <> OP.long "groups" <>
                                        \that you want to merge the first twenty samples/groups \
                                        \into one, and sample 21 through 40, and then \
                                        \have the last group separate. See README for instructions.")
-                <*> OP.switch (OP.short 'm' <> OP.long "removeMissing" <> OP.help "if one \
-                    \individual/group has missing data (-1) declare the whole group as \
-                    \missing data. Default behaviour is interpreting missing data as \
-                    \reference calls")
+                <*> OP.option OP.auto (OP.short 'm' <> OP.long "missingThreshold" <>
+                    OP.help "Sets the \
+                    \level of missingness needed to declare a group as missing. If set to 0, it \
+                    \means that if any sample in a group has missing data at a site, declare that \
+                    \group at that site as missing. 1 means that only if all in a group have \
+                    \missing data, declare the group as missing." <> OP.value 0.0 <> OP.showDefault)
                 <*> OP.option (splitOn "," <$> OP.str) (OP.short 'n' <> OP.long "names" <>
                         OP.metavar "NAME_GROUP1,NAME_GROUP2,..." <>
                         OP.help "specify the new names for each group as comma-separated list")
 
 runWithOptions :: MyOpts -> IO ()
-runWithOptions (MyOpts groups missing newNames) = runScript $ do
-    (FreqSumHeader _ counts, entries) <- readFreqSumStdIn
-    let newCounts = map sum . splitPlaces groups $ counts
-        newEntries = entries >-> P.mapM (tryRight . groupFreqSum groups missing)
-    runEffect $ newEntries >-> printFreqSumStdOut (FreqSumHeader (map T.pack newNames) newCounts)
+runWithOptions (MyOpts groups missingThreshold newNames) = runScript $ do
+    (FreqSumHeader _ sizes, entries) <- readFreqSumStdIn
+    let newSizes = map sum . splitPlaces groups $ sizes
+        newEntries = entries >-> P.mapM (tryRight . groupFreqSum groups missingThreshold sizes)
+    runEffect $ newEntries >-> printFreqSumStdOut (FreqSumHeader (map T.pack newNames) newSizes)
 
-groupFreqSum :: [Int] -> Bool -> FreqSumEntry -> Either T.Text FreqSumEntry
-groupFreqSum groups missing fs = do
+groupFreqSum :: [Int] -> Double -> [Int] -> FreqSumEntry -> Either T.Text FreqSumEntry
+groupFreqSum groups missingThreshold sizes fs = do
     assertErr "number of samples doesn't match nVec" $ sum groups == length (fsCounts fs)
-    let newCounts = map sum' . splitPlaces groups $ fsCounts fs
+    let newCounts = do
+            tuples <- splitPlaces groups (zip sizes (fsCounts fs))
+            let nrHaps =  sum . map fst $ tuples
+                nrMissing = sum . map fst . filter ((==Nothing) . snd) $ tuples
+                nrCounts = sum . catMaybes . map snd $ tuples
+                missingness = fromIntegral nrMissing / fromIntegral nrHaps
+            if missingness > missingThreshold
+            then return Nothing
+            else return $ Just nrCounts
     return fs {fsCounts = newCounts}
-  where
-    sum' values =
-        if missing then
-            if any (==Nothing) values then Nothing else Just . sum . catMaybes $ values
-        else
-            Just . sum . catMaybes $ values
