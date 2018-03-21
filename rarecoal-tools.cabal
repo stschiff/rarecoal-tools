@@ -140,3 +140,9 @@ executable filterFreqSum
   build-depends:        base, pipes, optparse-applicative, sequence-formats, errors, pipes-text,
                         turtle, attoparsec, pipes-attoparsec, transformers, text, zlib, bytestring
   default-language:     Haskell2010
+
+executable eigenstrat2FreqSum
+  main-is:              eigenstrat2FreqSum.hs
+  hs-source-dirs:       src-eigenstrat2FreqSum
+  build-depends:        base, pipes, sequence-formats, pipes-safe, turtle, vector, text
+  default-language:     Haskell2010
