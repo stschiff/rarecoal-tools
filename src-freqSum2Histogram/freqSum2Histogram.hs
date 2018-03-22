@@ -70,7 +70,7 @@ runWithOptions (MyOpts maxM nrCalledSites removeMissing jackknife) = runScript $
                     return (key, (jackknifeMean, jackknifeVar))
             else Nothing
 
-    let hist = RareAlleleHistogram (map unpack names) counts 1 maxM [] [] nrCalledSites mergedHist
+    let hist = RareAlleleHistogram names counts 1 maxM [] [] nrCalledSites mergedHist
                                    jackknifeEstimatesDict
     outs <- tryRight $ showHistogram hist
     scriptIO $ T.putStr outs

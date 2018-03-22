@@ -11,7 +11,7 @@ import Control.Monad.Trans.Class (lift)
 import Data.Int (Int64)
 import qualified Data.Map.Strict as M
 import Data.Monoid ((<>))
-import Data.Text (pack)
+import Data.Text (pack, Text)
 import qualified Data.Text.IO as T
 import qualified Options.Applicative as OP
 import Pipes (yield, for, Producer)
@@ -20,7 +20,7 @@ import System.IO (stdin, IOMode(..), openFile)
 import System.Random (randomIO)
 import Turtle (format, (%), s, w)
 
-data MyOpts = MyOpts String Int FilePath
+data MyOpts = MyOpts Text Int FilePath
 
 main :: IO ()
 main = OP.execParser opts >>= runWithOptions
@@ -46,9 +46,9 @@ runWithOptions (MyOpts name howMany histPath) = runScript $ do
     outs <- tryRight $ showHistogram hist'
     scriptIO $ T.putStr outs
 
-makeNewHist :: String -> Int -> RareAlleleHistogram -> Script RareAlleleHistogram
+makeNewHist :: Text -> Int -> RareAlleleHistogram -> Script RareAlleleHistogram
 makeNewHist name howMany hist = do
-    queryIndex <- tryJust (format ("could not find name: "%s) (pack name)) $ lookup name (zip (raNames hist) [0..])
+    queryIndex <- tryJust (format ("could not find name: "%s) name) $ lookup name (zip (raNames hist) [0..])
     when (raJackknifeEstimates hist /= Nothing) $ do
         scriptIO $ errLn "handling histograms with jackknife estimates is not yet implemented."
     let histRows = M.toList (raCounts hist)

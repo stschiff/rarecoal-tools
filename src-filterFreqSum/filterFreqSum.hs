@@ -1,71 +1,68 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-import SequenceFormats.FreqSum (FreqSumEntry(..), readFreqSumStdIn, printFreqSumStdOut)
+import SequenceFormats.FreqSum (FreqSumEntry(..), readFreqSumStdIn, printFreqSumStdOut, 
+    FreqSumHeader(..))
 import SequenceFormats.Utils (liftParsingErrors)
-import qualified Codec.Compression.GZip as Gzip
-import Control.Error (runScript, Script)
+import Control.Applicative (optional)
 import Control.Monad.Trans.Class (lift)
-import qualified Data.ByteString.Lazy as BL
 import Data.Char (isSpace)
-import Data.List (isSuffixOf)
+import Data.Maybe (catMaybes)
 import Data.Text (unpack, Text)
-import Data.Text.Lazy.Encoding (decodeUtf8)
 import qualified Data.Attoparsec.Text as A
-import Pipes (Producer, runEffect, yield, (>->), next)
+import Pipes (Producer, runEffect, yield, (>->), next, Pipe, cat, for)
 import Pipes.Attoparsec (parsed)
-import qualified Pipes.Text as PT
-import Turtle hiding (stdin)
+import qualified Pipes.Prelude as P
+import Pipes.Safe (runSafeT)
+import qualified Pipes.Text.IO as PT
+import Prelude hiding (FilePath)
+import Turtle hiding (stdin, cat)
 
 type BedEntry = (Text, Int, Int)
 data IntervalStatus = BedBehind | FSwithin | BedAhead
 
-argParser :: Parser String
-argParser = unpack . format fp <$>
-    optPath "bed" 'b' "a bed file that contains the regions to be included"
+argParser :: Parser (Maybe FilePath, Double)
+argParser = (,) <$>
+    optional (optPath "bed" 'b' "a bed file that contains the regions to be included") <*>
+    optDouble "missingness" 'm' "the maximum missingness allowed. Default=1.0 (no filter)"
 
 main :: IO ()
 main = do
-    bedFile <- options "script to filter a freqSum file through a mask" argParser
-    lazyBs <- BL.readFile bedFile
-    let decompressedLazyBs = if ".gz" `isSuffixOf` bedFile then Gzip.decompress lazyBs else lazyBs
-        lazyT = decodeUtf8 decompressedLazyBs
-        textProd = PT.fromLazy lazyT
-    runScript $ do
+    (maybeBedFile, missingness) <- options "script to filter a freqSum file" argParser
+    let bedFilter = case maybeBedFile of
+            Nothing -> cat
+            Just bedFile ->
+                let textProd = PT.readFile . unpack . format fp $ bedFile
+                    bedProd = parsed bedFileParser textProd >>= liftParsingErrors
+                in  filterThroughBed bedProd
+    runSafeT $ do
         (fsHeader, fsBody) <- readFreqSumStdIn
-        let bedProd = parsed bedFileParser textProd >>= liftParsingErrors
-        runEffect $ filterThroughBed bedProd fsBody >-> printFreqSumStdOut fsHeader
+        runEffect $ fsBody >-> bedFilter >->
+            P.filter (missingnessFilter missingness (sum . fshCounts $ fsHeader)) >->
+            printFreqSumStdOut fsHeader
 
-
-filterThroughBed :: Producer BedEntry Script () -> Producer FreqSumEntry Script () ->
-    Producer FreqSumEntry Script ()
-filterThroughBed bedProd fsProd = do
+filterThroughBed :: (Monad m) => Producer BedEntry m () -> Pipe FreqSumEntry FreqSumEntry m ()
+filterThroughBed bedProd = do
     b <- lift $ next bedProd
     let (bedCurrent, bedRest) = case b of
             Left _ -> error "Bed file empty or not readable"
             Right r -> r
-    f' <- lift $ next fsProd
-    let (fsCurrent, fsRest) = case f' of
-            Left _ -> error "FreqSum stream empty or not readable"
-            Right r -> r
-    go bedCurrent fsCurrent bedRest fsRest
+    for cat (go bedCurrent bedRest)
   where
-    go bedCurrent fsCurrent bedRest fsRest = do
-        let recurseNextBed = do
+    go bedCurrent bedRest fsCurrent = do
+        case bedCurrent `checkIntervalStatus` fsCurrent of
+            BedBehind -> do
                 b <- lift $ next bedRest
                 case b of
                     Left () -> return ()
-                    Right (nextBed, bedRest') -> go nextBed fsCurrent bedRest' fsRest
-            recurseNextFS = do
-                f' <- lift $ next fsRest
-                case f' of
-                    Left () -> return ()
-                    Right (nextFS, fsRest') -> go bedCurrent nextFS bedRest fsRest'
-        case bedCurrent `checkIntervalStatus` fsCurrent of
-            BedBehind -> recurseNextBed
-            BedAhead -> recurseNextFS
+                    Right (nextBed, bedRest') -> go nextBed bedRest' fsCurrent
+            BedAhead -> return ()
             FSwithin -> do
-                yield fsCurrent
-                recurseNextFS
+                yield fsCurrent                
+
+missingnessFilter :: Double -> Int -> FreqSumEntry -> Bool
+missingnessFilter m totalHaps fs =
+    let num = sum . catMaybes . fsCounts $ fs
+    in  (fromIntegral num / fromIntegral totalHaps) < m
 
 checkIntervalStatus :: BedEntry -> FreqSumEntry -> IntervalStatus
 checkIntervalStatus (bedChrom, bedStart, bedEnd) (FreqSumEntry fsChrom' fsPos' _ _ _) =

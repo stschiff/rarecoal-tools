@@ -34,7 +34,7 @@ convertToFreqSum (EigenstratSnpEntry chrom pos ref alt, genoLine) =
     makeCounts Missing = Nothing
 
 optionsParser :: Parser (FilePath, FilePath, FilePath)
-optionsParser = (,,) <$> optPath "--geno" 'g' "input eigenstrat-geno file" <*> 
-    optPath "--snp" 's' "input eigenstrat-snp file" <*>
-    optPath "--ind" 'i' "input eigenstrat-ind file"
+optionsParser = (,,) <$> optPath "geno" 'g' "input eigenstrat-geno file" <*> 
+    optPath "snp" 's' "input eigenstrat-snp file" <*>
+    optPath "ind" 'i' "input eigenstrat-ind file"
 
