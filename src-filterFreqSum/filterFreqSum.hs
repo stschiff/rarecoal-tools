@@ -37,7 +37,7 @@ main = do
     runSafeT $ do
         (fsHeader, fsBody) <- readFreqSumStdIn
         runEffect $ fsBody >-> bedFilter >->
-            P.filter (missingnessFilter missingness (sum . fshCounts $ fsHeader)) >->
+            P.filter (missingnessFilter missingness (fshCounts fsHeader)) >->
             printFreqSumStdOut fsHeader
 
 filterThroughBed :: (Monad m) => Producer BedEntry m () -> Pipe FreqSumEntry FreqSumEntry m ()
@@ -59,10 +59,11 @@ filterThroughBed bedProd = do
             FSwithin -> do
                 yield fsCurrent                
 
-missingnessFilter :: Double -> Int -> FreqSumEntry -> Bool
-missingnessFilter m totalHaps fs =
-    let num = sum . catMaybes . fsCounts $ fs
-    in  (fromIntegral (totalHaps - num) / fromIntegral totalHaps) < m
+missingnessFilter :: Double -> [Int] -> FreqSumEntry -> Bool
+missingnessFilter m hapNums fs =
+    let num = sum [n | (n, f) <- zip hapNums (fsCounts fs), f == Nothing]
+        denom = sum hapNums
+    in  (fromIntegral num / fromIntegral denom) <= m
 
 checkIntervalStatus :: BedEntry -> FreqSumEntry -> IntervalStatus
 checkIntervalStatus (bedChrom, bedStart, bedEnd) (FreqSumEntry fsChrom' fsPos' _ _ _) =
