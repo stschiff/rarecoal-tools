@@ -66,17 +66,20 @@ freqSumCombine counts1 counts2 cond fillHomRef = for cat $ \nextPair -> do
             when (cond /= C1 && cond /= Both) . yield $
                 fs2 {fsCounts = replicate n1 filler ++ fsCounts fs2}
         (Just fs1, Just fs2) -> do
-            if fsRef fs1 == fsRef fs2 && fsAlt fs1 == fsAlt fs2 then
-                yield $ fs1 {fsCounts = fsCounts fs1 ++ fsCounts fs2}
+            let FreqSumEntry chrom pos r1 a1 freqs1 = fs1
+                FreqSumEntry _ _ r2 a2 freqs2 = fs2
+            if r1 == r2 && (a1 == a2 || a1 == '.' || a2 == '.')
+            then do
+                let altAllele = if a1 == '.' then a2 else a1
+                yield $ fs1 {fsAlt = altAllele, fsCounts = freqs1 ++ freqs2}
             else
-                if fsRef fs1 == fsAlt fs2 && fsAlt fs1 == fsRef fs2 then do
+                if r1 == a2 && a1 == r2 then do
                     liftIO . errLn $
-                        format ("flipping alleles in position "%s%":"%d) (fsChrom fs1) (fsPos fs1)
-                    yield $ fs1 {fsCounts = fsCounts fs1 ++ flipAlleles counts2 (fsCounts fs2)}
+                        format ("flipping alleles in position "%s%":"%d) chrom pos
+                    yield $ fs1 {fsCounts = freqs1 ++ flipAlleles counts2 freqs2}
                 else do
                     liftIO . errLn $
-                        format ("position "%s%":"%d%" has inconsistent alleles. Skipping")
-                            (fsChrom fs1) (fsPos fs1)
+                        format ("position "%s%":"%d%" has inconsistent alleles. Skipping") chrom pos
         (Nothing, Nothing) -> liftIO . throwIO $ AssertionFailed "freqSumCombine: should not happen"
 
 flipAlleles :: [Int] -> [Maybe Int] -> [Maybe Int]

@@ -7,7 +7,6 @@ import Data.Int (Int64)
 import qualified Data.Map.Strict as Map
 import Data.Maybe (maybe)
 import Data.Monoid ((<>))
-import Data.Text (unpack)
 import qualified Data.Text.IO as T
 -- import Debug.Trace (trace)
 import Lens.Family2 (view)

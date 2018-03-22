@@ -11,7 +11,7 @@ import Control.Monad.Trans.Class (lift)
 import Data.Int (Int64)
 import qualified Data.Map.Strict as M
 import Data.Monoid ((<>))
-import Data.Text (pack, Text)
+import Data.Text (Text)
 import qualified Data.Text.IO as T
 import qualified Options.Applicative as OP
 import Pipes (yield, for, Producer)
