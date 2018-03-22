@@ -62,7 +62,7 @@ filterThroughBed bedProd = do
 missingnessFilter :: Double -> Int -> FreqSumEntry -> Bool
 missingnessFilter m totalHaps fs =
     let num = sum . catMaybes . fsCounts $ fs
-    in  (fromIntegral num / fromIntegral totalHaps) < m
+    in  (fromIntegral (totalHaps - num) / fromIntegral totalHaps) < m
 
 checkIntervalStatus :: BedEntry -> FreqSumEntry -> IntervalStatus
 checkIntervalStatus (bedChrom, bedStart, bedEnd) (FreqSumEntry fsChrom' fsPos' _ _ _) =
