@@ -8,6 +8,7 @@ import qualified Data.Text as T
 import qualified Options.Applicative as OP
 import Pipes (Pipe, runEffect, (>->), cat, for, yield)
 import qualified Pipes.Prelude as P
+import Turtle hiding (cat, e)
 
 main :: IO ()
 main = OP.execParser opts >> run
@@ -26,7 +27,8 @@ run = do
 processVCFentry :: Pipe VCFentry FreqSumEntry IO ()
 processVCFentry = for cat $ \vcfEntry -> do
     case vcfToFreqSumEntry vcfEntry of
-        Left err -> error err
+        Left e -> liftIO . err . unsafeTextToLine $ format ("skipping invalid vcfEntry "%w%
+            ". Reason: "%s) vcfEntry (T.pack e)
         Right a -> yield a
 
 removeDuplicatePositions :: IORef (T.Text, Int) -> FreqSumEntry -> IO Bool

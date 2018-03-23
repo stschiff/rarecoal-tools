@@ -22,7 +22,8 @@ executable vcf2FreqSum
                        pipes-attoparsec,
                        pipes-text,
                        optparse-applicative,
-                       transformers
+                       transformers,
+                       turtle	
   default-language:    Haskell2010
 
 executable groupFreqSum
