@@ -5,14 +5,12 @@ import SequenceFormats.FreqSum (FreqSumEntry(..), readFreqSumStdIn, printFreqSum
 import SequenceFormats.Utils (liftParsingErrors)
 import Control.Applicative (optional)
 import Control.Monad.Trans.Class (lift)
-import Control.Monad (void)
 import Data.Char (isSpace)
-import Data.Maybe (catMaybes)
 import Data.Text (unpack, Text)
 import qualified Data.Attoparsec.Text as A
-import Debug.Trace (trace)
-import Pipes (Producer, runEffect, yield, (>->), next, Pipe, cat, for)
-import Pipes.Attoparsec (parsed, ParsingError)
+-- import Debug.Trace (trace)
+import Pipes (Producer, runEffect, yield, (>->), next, cat)
+import Pipes.Attoparsec (parsed)
 import qualified Pipes.Prelude as P
 import Pipes.Safe (runSafeT)
 import qualified Pipes.Text.IO as PT
@@ -22,61 +20,60 @@ import Turtle hiding (stdin, cat)
 type BedEntry = (Text, Int, Int)
 data IntervalStatus = BedBehind | FSwithin | BedAhead
 
-argParser :: Parser (Maybe FilePath, Double)
+argParser :: Parser (Maybe FilePath, Maybe Double)
 argParser = (,) <$>
     optional (optPath "bed" 'b' "a bed file that contains the regions to be included") <*>
-    optDouble "missingness" 'm' "the maximum missingness allowed. Default=1.0 (no filter)"
+    optional (optDouble "missingness" 'm' "the maximum missingness allowed (0-1). Default=1")
 
 main :: IO ()
-main = do
-    (maybeBedFile, missingness) <- options "script to filter a freqSum file" argParser
-    -- let (Just bedFile) = maybeBedFile
-    --     textProd = PT.readFile . unpack . format fp $ bedFile
-    --     bedProd = parsed bedFileParser textProd >>= liftParsingErrors
-
-    let bedFilter = case maybeBedFile of
-            Nothing -> cat
+main = runSafeT $ do
+    (maybeBedFile, maybeMissingness) <- options "script to filter a freqSum file" argParser
+    (fsHeader, fsBody) <- readFreqSumStdIn
+    let fsProd = case maybeBedFile of
+            Nothing -> fsBody
             Just bedFile ->
                 let textProd = PT.readFile . unpack . format fp $ bedFile
-                    bedProd = parsed bedFileParser textProd
-                in  filterThroughBed bedProd
-    runSafeT $ do
-        (fsHeader, fsBody) <- readFreqSumStdIn
-        runEffect $ fsBody >-> bedFilter >->
-            P.filter (missingnessFilter missingness (fshCounts fsHeader)) >->
-            printFreqSumStdOut fsHeader
+                    bedProd = parsed bedFileParser textProd >>= liftParsingErrors
+                in  filterThroughBed bedProd fsBody
+    let missingnessFilterPipe = case maybeMissingness of
+            Nothing -> cat
+            Just m -> P.filter (missingnessFilter m (fshCounts fsHeader))
+    runEffect $ fsProd >-> missingnessFilterPipe >-> printFreqSumStdOut fsHeader
 
-filterThroughBed :: (MonadIO m) =>
-    Producer BedEntry m (Either (ParsingError, Producer Text m ()) ()) ->
-    Pipe FreqSumEntry FreqSumEntry m ()
-filterThroughBed bedProd = do
+filterThroughBed :: (Monad m) => Producer BedEntry m () -> Producer FreqSumEntry m () ->
+    Producer FreqSumEntry m ()
+filterThroughBed bedProd fsProd = do
     b <- lift $ next bedProd
-    (bedCurrent, bedRest) <- case b of
-        Left (Left (pErr, restProd)) -> do
-            Right (chunk, _) <- lift $ next restProd
-            error $ "1Parsing Error in bed file: " ++ show pErr ++
-                    ", which occurred while trying to parse this bit: " ++ show chunk
-        Left (Right ()) -> error "Error: Empty Bed File"
-        Right r -> return r
-    for cat (go bedCurrent bedRest)
+    let (bedCurrent, bedRest) = case b of
+            Left _ -> error "Bed file empty or not readable"
+            Right r -> r
+    f' <- lift $ next fsProd
+    let (fsCurrent, fsRest) = case f' of
+            Left _ -> error "FreqSum stream empty or not readable"
+            Right r -> r
+    go bedCurrent fsCurrent bedRest fsRest
   where
-    go bedCurrent bedRest fsCurrent = do
-        case bedCurrent `checkIntervalStatus` fsCurrent of
-            BedBehind -> do
+    go bedCurrent fsCurrent bedRest fsRest = do
+        let recurseNextBed = do
                 b <- lift $ next bedRest
                 case b of
-                    Left (Left (pErr, restProd)) -> do
-                        Right (chunk, _) <- lift $ next restProd
-                        error $ "2Parsing Error in bed file: " ++ show pErr ++
-                                ", which occurred while trying to parse this bit: " ++ show chunk
-                    Left (Right ()) -> return ()
-                    Right (nextBed, bedRest') -> go nextBed bedRest' fsCurrent
-            BedAhead -> return ()
-            FSwithin -> yield fsCurrent   
+                    Left () -> return ()
+                    Right (nextBed, bedRest') -> go nextBed fsCurrent bedRest' fsRest
+            recurseNextFS = do
+                f' <- lift $ next fsRest
+                case f' of
+                    Left () -> return ()
+                    Right (nextFS, fsRest') -> go bedCurrent nextFS bedRest fsRest'
+        case bedCurrent `checkIntervalStatus` fsCurrent of
+            BedBehind -> recurseNextBed
+            BedAhead -> recurseNextFS
+            FSwithin -> do
+                yield fsCurrent
+                recurseNextFS
 
 missingnessFilter :: Double -> [Int] -> FreqSumEntry -> Bool
 missingnessFilter m hapNums fs =
-    let num = sum [n | (n, f) <- zip hapNums (fsCounts fs), f == Nothing]
+    let num = sum [n | (n, freq) <- zip hapNums (fsCounts fs), freq == Nothing]
         denom = sum hapNums
     in  (fromIntegral num / fromIntegral denom) <= m
 
