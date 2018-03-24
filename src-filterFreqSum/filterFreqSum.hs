@@ -2,11 +2,12 @@
 
 import SequenceFormats.FreqSum (FreqSumEntry(..), readFreqSumStdIn, printFreqSumStdOut, 
     FreqSumHeader(..))
-import SequenceFormats.Utils (liftParsingErrors)
+import SequenceFormats.Utils (liftParsingErrors, Chrom(..))
+
 import Control.Applicative (optional)
 import Control.Monad.Trans.Class (lift)
 import Data.Char (isSpace)
-import Data.Text (unpack, Text)
+import Data.Text (unpack)
 import qualified Data.Attoparsec.Text as A
 -- import Debug.Trace (trace)
 import Pipes (Producer, runEffect, yield, (>->), next, cat)
@@ -17,7 +18,7 @@ import qualified Pipes.Text.IO as PT
 import Prelude hiding (FilePath)
 import Turtle hiding (stdin, cat)
 
-type BedEntry = (Text, Int, Int)
+type BedEntry = (Chrom, Int, Int)
 data IntervalStatus = BedBehind | FSwithin | BedAhead
 
 argParser :: Parser (Maybe FilePath, Maybe Double)
@@ -88,7 +89,7 @@ checkIntervalStatus (bedChrom, bedStart, bedEnd) (FreqSumEntry fsChrom' fsPos' _
                   if bedEnd < fsPos' then BedBehind else FSwithin
 
 bedFileParser :: A.Parser BedEntry
-bedFileParser = (,,) <$> chrom <* A.skipSpace <*> A.decimal <* A.skipSpace <*> A.decimal <*
+bedFileParser = (,,) <$> chrom <* A.skipSpace <*> A.decimal <* A.skipSpace <*> A.decimal <* 
     A.endOfLine
   where
-    chrom = A.takeTill isSpace
+    chrom = Chrom <$> A.takeTill isSpace

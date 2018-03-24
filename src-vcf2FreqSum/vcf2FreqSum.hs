@@ -2,6 +2,7 @@
 
 import SequenceFormats.FreqSum (FreqSumEntry(..), FreqSumHeader(..), printFreqSumStdOut)
 import SequenceFormats.VCF (readVCFfromStdIn, vcfToFreqSumEntry, VCFheader(..), VCFentry)
+import SequenceFormats.Utils (Chrom(..))
 
 import Data.IORef (newIORef, readIORef, writeIORef, IORef)
 import qualified Data.Text as T
@@ -20,7 +21,7 @@ run :: IO ()
 run = do
     (VCFheader _ names, vcfProd) <- readVCFfromStdIn
     let fsHeader = FreqSumHeader names (replicate (length names) 2)
-    lastPos <- newIORef ("", 0)
+    lastPos <- newIORef (Chrom "", 0)
     runEffect $ vcfProd >-> processVCFentry >-> P.filterM (removeDuplicatePositions lastPos) >->
         printFreqSumStdOut fsHeader
 
@@ -31,7 +32,7 @@ processVCFentry = for cat $ \vcfEntry -> do
             ". Reason: "%s) vcfEntry (T.pack e)
         Right a -> yield a
 
-removeDuplicatePositions :: IORef (T.Text, Int) -> FreqSumEntry -> IO Bool
+removeDuplicatePositions :: IORef (Chrom, Int) -> FreqSumEntry -> IO Bool
 removeDuplicatePositions lastPos (FreqSumEntry chrom pos _ _ _) = do
     (chrom', pos') <- readIORef lastPos
     let ret = if chrom' == chrom && pos' == pos then False else True

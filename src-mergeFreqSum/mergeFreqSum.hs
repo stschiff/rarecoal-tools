@@ -2,13 +2,13 @@
 import OrderedZip (orderedZip)
 import SequenceFormats.FreqSum (FreqSumEntry(..), FreqSumHeader(..), readFreqSumStdIn, 
     readFreqSumFile, printFreqSumStdOut)
+import SequenceFormats.Utils (Chrom(..))
 
 import Control.Error (errLn)
 import Control.Exception (AssertionFailed(..), throwIO)
 import Control.Monad (when)
 import Control.Monad.IO.Class (liftIO, MonadIO)
 import Data.Monoid ((<>))
-import qualified Data.Text as T
 import qualified Options.Applicative as OP
 import Pipes ((>->), Pipe, runEffect, cat, for, yield)
 import Pipes.Safe (runSafeT)
@@ -51,18 +51,7 @@ runWithOptions (MyOpts f1 f2 cond fillHomRef) = runSafeT $ do
         newHeader = FreqSumHeader (names1 ++ names2) (counts1 ++ counts2)
     runEffect $ combinedEntries >-> printFreqSumStdOut newHeader
   where
-    comp fs1 fs2 =
-        case fsChrom fs1 `chromCompare` fsChrom fs2 of
-            LT -> LT
-            GT -> GT
-            EQ -> fsPos fs1 `compare` fsPos fs2
-    chromCompare chrom1 chrom2 = 
-        let chrom1' = if T.take 3 chrom1 == "chr" then T.drop 3 chrom1 else chrom1
-            chrom2' = if T.take 3 chrom2 == "chr" then T.drop 3 chrom2 else chrom2
-            chromNum1 = read . T.unpack $ chrom1' :: Int
-            chromNum2 = read . T.unpack $ chrom2' :: Int
-        in  chromNum1 `compare` chromNum2
-            
+    comp fs1 fs2 = (fsChrom fs1, fsPos fs1) `compare` (fsChrom fs2, fsPos fs2)            
 
 freqSumCombine :: (MonadIO m) => [Int] -> [Int] -> ConditionOn -> Bool ->
     Pipe (Maybe FreqSumEntry, Maybe FreqSumEntry) FreqSumEntry m ()
@@ -87,11 +76,12 @@ freqSumCombine counts1 counts2 cond fillHomRef = for cat $ \nextPair -> do
             else
                 if r1 == a2 && a1 == r2 then do
                     liftIO . errLn $
-                        format ("flipping alleles in position "%s%":"%d) chrom pos
+                        format ("flipping alleles in position "%s%":"%d) (unChrom chrom) pos
                     yield $ fs1 {fsCounts = freqs1 ++ flipAlleles counts2 freqs2}
                 else do
                     liftIO . errLn $
-                        format ("position "%s%":"%d%" has inconsistent alleles. Skipping") chrom pos
+                        format ("position "%s%":"%d%" has inconsistent alleles. Skipping")
+                            (unChrom chrom) pos
         (Nothing, Nothing) -> liftIO . throwIO $ AssertionFailed "freqSumCombine: should not happen"
 
 flipAlleles :: [Int] -> [Maybe Int] -> [Maybe Int]
