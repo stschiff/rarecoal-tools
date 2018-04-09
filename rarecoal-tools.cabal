@@ -21,7 +21,6 @@ executable vcf2FreqSum
                        pipes,
                        pipes-attoparsec,
                        pipes-text,
-                       optparse-applicative,
                        transformers,
                        turtle	
   default-language:    Haskell2010
@@ -30,12 +29,8 @@ executable groupFreqSum
   main-is:             groupFreqSum.hs
   hs-source-dirs:      src-groupFreqSum
   build-depends:       base, sequence-formats,
-                       optparse-applicative,
-                       pipes-text,
                        pipes, text,
-                       pipes-attoparsec,
-                       errors,
-                       split
+                       turtle, MissingH, vector
   default-language:    Haskell2010
 
 executable selectInFreqSum
