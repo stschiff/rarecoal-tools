@@ -6,21 +6,29 @@ import SequenceFormats.Utils (Chrom(..))
 
 import Data.IORef (newIORef, readIORef, writeIORef, IORef)
 import qualified Data.Text as T
-import qualified Options.Applicative as OP
 import Pipes (Pipe, runEffect, (>->), cat, for, yield)
 import qualified Pipes.Prelude as P
 import Turtle hiding (cat, e)
 
 main :: IO ()
-main = OP.execParser opts >> run
-  where
-    opts = OP.info (OP.helper <*> pure ()) (OP.progDesc "convert a multi-sample VCF, read from \
-                                                         \stdin, into a freqSum file")
+main = do
+    maybeNames <- options "convert a multi-sample VCF, read from stdin, into a freqSum file" 
+        optParser
+    run maybeNames
 
-run :: IO ()
-run = do
+optParser :: Parser (Maybe [Text])
+optParser = optional . fmap (T.splitOn ",") $ optText "names" 'n'
+    "A comma-separated list of names to replace the VCF names with, if given."
+
+run :: Maybe [Text] -> IO ()
+run maybeNames = do
     (VCFheader _ names, vcfProd) <- readVCFfromStdIn
-    let fsHeader = FreqSumHeader names (replicate (length names) 2)
+    newNames <- case maybeNames of
+        Nothing -> return names
+        Just names' -> do
+            when (length names' /= length names) $ error "nr of given names must match names in VCF"
+            return names'
+    let fsHeader = FreqSumHeader newNames (replicate (length newNames) 2)
     lastPos <- newIORef (Chrom "", 0)
     runEffect $ vcfProd >-> processVCFentry >-> P.filterM (removeDuplicatePositions lastPos) >->
         printFreqSumStdOut fsHeader

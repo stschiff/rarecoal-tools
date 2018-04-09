@@ -2,7 +2,7 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 name:                rarecoal-tools
-version:             1.2.4
+version:             1.2.5
 license:             GPL-3
 license-file:        LICENSE
 author:              Stephan Schiffels
@@ -15,7 +15,7 @@ executable vcf2FreqSum
   main-is:             vcf2FreqSum.hs
   hs-source-dirs:      src-vcf2FreqSum
   build-depends:       base, sequence-formats,
-                       text,
+                       text, 
                        errors,
                        attoparsec,
                        pipes,
