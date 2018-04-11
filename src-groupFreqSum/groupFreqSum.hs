@@ -55,6 +55,7 @@ getGroupDefinitions groupInput = do
     groups <- case groupInput of
         Left directGroupInputs -> return [(n, s') | GroupInput n s' <- directGroupInputs]
         Right fp' -> parseGroupsFromFile fp'
+    when (null groups) $ error "need at least one group definition to proceed"
     echo . unsafeTextToLine $ format ("Using the following group definitions:"%w) groups
     return groups
     
