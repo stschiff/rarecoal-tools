@@ -2,10 +2,12 @@
 
 import SequenceFormats.FreqSum (FreqSumEntry(..), readFreqSumStdIn, FreqSumHeader(..), printFreqSumStdOut)
 
+import Data.Char (isAlphaNum)
 import Data.List.Utils (addToAL)
 import Data.Maybe (maybe)
 import qualified Data.Text as T
 import qualified Data.Vector as V
+import Debug.Trace (trace)
 import Pipes ((>->), runEffect)
 import qualified Pipes.Prelude as P
 import Prelude hiding (FilePath)
@@ -64,12 +66,18 @@ parseGroupsFromFile fp' = fold (lineToText <$> input fp') groupFold
   where
     groupFold = Fold step initial extract
     step ret next =
-        let [sample, name] = cut space next
-        in  case name `lookup` ret of
-                Just previousSamples -> addToAL ret name (sample:previousSamples)
-                Nothing -> addToAL ret name [sample]
+        let matchResult = match linePattern next
+        in  case matchResult of
+                [(sample, name)] -> case name `lookup` ret of
+                    Just previousSamples -> addToAL ret name (sample:previousSamples)
+                    Nothing -> addToAL ret name [sample]
+                _ -> error $ "could not parse groupDefinition from line " ++ show next ++
+                    ". Note that sample and population names can have letters, numbers and symbols \
+                    \'-', '_'."
     initial = []
     extract = id
+    linePattern = (,) <$> name <* space <*> name
+    name = plus (satisfy (\c -> isAlphaNum c || c == '_' || c == '-'))
 
 parseMissingness :: Parser Double
 parseMissingness = maybe 0.0 id <$> optional (optDouble "missingThreshold" 'm' "Sets the \
