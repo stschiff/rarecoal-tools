@@ -22,15 +22,16 @@ main = OP.execParser opts >>= runWithOptions
                                            \read from stdin")
 
 parser :: OP.Parser MyOpts
-parser = MyOpts <$> OP.option (splitOn "," <$> OP.str) (OP.short 'n' <> OP.long "names" <>
-                OP.metavar "NAME1,NAME2,..." <> OP.help "comma-separated list of names to select")
+parser = MyOpts <$>
+    OP.option (splitOn "," <$> OP.str) (OP.short 'n' <> OP.long "names" <>
+        OP.metavar "NAME1,NAME2,..." <> OP.help "comma-separated list of names to select")
 
 runWithOptions :: MyOpts -> IO ()
 runWithOptions (MyOpts names) = runScript $ do
     (FreqSumHeader oldNames oldCounts, entries) <- readFreqSumStdIn
     indices <- mapM (findIndex oldNames) (map pack names)
-    let newEntries = entries >-> P.map (selectColumns indices) >->
-                                 P.filter ((>0) . sum . catMaybes . fsCounts)
+    let newEntries = entries >-> P.map (selectColumns indices)
+--                             >-> P.filter ((>0) . sum . catMaybes . fsCounts)
         newCounts = map (oldCounts!!) indices
         newHeader = FreqSumHeader (map pack names) newCounts
     runEffect $ newEntries >-> printFreqSumStdOut newHeader
