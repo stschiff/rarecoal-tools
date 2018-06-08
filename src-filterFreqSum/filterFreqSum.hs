@@ -7,7 +7,7 @@ import SequenceFormats.Utils (liftParsingErrors, Chrom(..))
 import Control.Applicative (optional)
 import Control.Monad.Trans.Class (lift)
 import Data.Char (isSpace)
-import Data.Text (unpack)
+import Data.Text (unpack, Text)
 import qualified Data.Attoparsec.Text as A
 -- import Debug.Trace (trace)
 import Pipes (Producer, runEffect, yield, (>->), next, cat)
@@ -21,14 +21,17 @@ import Turtle hiding (stdin, cat)
 type BedEntry = (Chrom, Int, Int)
 data IntervalStatus = BedBehind | FSwithin | BedAhead
 
-argParser :: Parser (Maybe FilePath, Maybe Double)
-argParser = (,) <$>
+argParser :: Parser (Maybe FilePath, Maybe Double, Maybe Text)
+argParser = (,,) <$>
     optional (optPath "bed" 'b' "a bed file that contains the regions to be included") <*>
-    optional (optDouble "missingness" 'm' "the maximum missingness allowed (0-1). Default=1")
+    optional (optDouble "missingness" 'm' "the maximum missingness allowed (0-1). Default=1") <*>
+    optional (optText "sampleMissingness" 's' "an optional sample name to condition on having \
+        \no missingness")
 
 main :: IO ()
 main = runSafeT $ do
-    (maybeBedFile, maybeMissingness) <- options "script to filter a freqSum file" argParser
+    (maybeBedFile, maybeMissingness, maybeSampleMissingness) <-
+        options "script to filter a freqSum file" argParser
     (fsHeader, fsBody) <- readFreqSumStdIn
     let fsProd = case maybeBedFile of
             Nothing -> fsBody
@@ -39,7 +42,13 @@ main = runSafeT $ do
     let missingnessFilterPipe = case maybeMissingness of
             Nothing -> cat
             Just m -> P.filter (missingnessFilter m (fshCounts fsHeader))
-    runEffect $ fsProd >-> missingnessFilterPipe >-> printFreqSumStdOut fsHeader
+    let sampleMissingnessFilterPipe = case maybeSampleMissingness of
+            Nothing -> cat
+            Just s ->
+                let samplePos = fst . head . filter ((==s) . snd) . zip [0..] . fshNames $ fsHeader
+                in  P.filter (sampleMissingnessFilter samplePos)
+    runEffect $ fsProd >-> missingnessFilterPipe >-> sampleMissingnessFilterPipe >-> 
+        printFreqSumStdOut fsHeader
 
 filterThroughBed :: (Monad m) => Producer BedEntry m () -> Producer FreqSumEntry m () ->
     Producer FreqSumEntry m ()
@@ -77,6 +86,10 @@ missingnessFilter m hapNums fs =
     let num = sum [n | (n, freq) <- zip hapNums (fsCounts fs), freq == Nothing]
         denom = sum hapNums
     in  (fromIntegral num / fromIntegral denom) <= m
+
+sampleMissingnessFilter :: Int -> FreqSumEntry -> Bool
+sampleMissingnessFilter filterPos fs = (fsCounts fs) !! filterPos /= Nothing
+    
 
 checkIntervalStatus :: BedEntry -> FreqSumEntry -> IntervalStatus
 checkIntervalStatus (bedChrom, bedStart, bedEnd) (FreqSumEntry fsChrom' fsPos' _ _ _) =
