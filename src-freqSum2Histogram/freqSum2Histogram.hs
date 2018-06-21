@@ -14,7 +14,7 @@ import qualified Options.Applicative as OP
 import Pipes.Group (groupsBy, folds)
 import qualified Pipes.Prelude as P
 
-data MyOpts = MyOpts Int Int64 Bool Bool
+data MyOpts = MyOpts Int Int64 Bool Bool Bool
 
 main :: IO ()
 main = OP.execParser opts >>= runWithOptions
@@ -39,6 +39,8 @@ parser = MyOpts <$> OP.option OP.auto (OP.long "maxM"
                 <*> OP.switch (OP.long "removeMissing" <> OP.short 'r' <> OP.help "remove sites \
                                \at which any selected column is missing (-1). By default, \
                                \missing data is interpreted as reference alleles.")
+                <*> OP.switch (OP.long "removeTransitions" <> OP.short 't' <>
+                        OP.help "remove transition SNPs")
                 <*> OP.switch (OP.long "jackknife" <> OP.short 'j' <>
                     OP.help "run with weighted jackknife error estimate using chromosome-drop-out. \
                         \Warning: This assumes that input is ordered by chromosome. It doesn't \
@@ -46,43 +48,47 @@ parser = MyOpts <$> OP.option OP.auto (OP.long "maxM"
                         \to be consecutive.")
 
 runWithOptions :: MyOpts -> IO ()
-runWithOptions (MyOpts maxM nrCalledSites removeMissing jackknife) = runScript $ do
-    (FreqSumHeader names counts, entries) <- readFreqSumStdIn
-    let entriesByChromosome = view (groupsBy (\fs1 fs2 -> fsChrom fs1 == fsChrom fs2)) entries
-        folder = (,) <$> buildPatternHist removeMissing maxM <*> getNrSites removeMissing
-        patternHistAndLengthProd = purely folds folder entriesByChromosome
-    patternHistsAndLengths <- purely P.fold list patternHistAndLengthProd
-    let patternHists = map fst patternHistsAndLengths
-        nrSites = map snd patternHistsAndLengths
-        totalNrSites = sum nrSites
-        mergedHist = Map.unionsWith (+) patternHists
-    let jackknifeEstimatesDict =
-            if jackknife then
-                let effChromLengths =
-                        [fromIntegral n / fromIntegral totalNrSites * fromIntegral nrCalledSites |
-                         n <- nrSites]
-                in  Just . Map.fromList $ do
-                    key <- Map.keys mergedHist
-                    let countsPerChromosome = map (Map.findWithDefault 0 key) patternHists
-                        (jackknifeMean, jackknifeVar) =
-                            computeJackknife effChromLengths countsPerChromosome
-                    return (key, (jackknifeMean, jackknifeVar))
-            else Nothing
+runWithOptions (MyOpts maxM nrCalledSites removeMissing removeTransitions jackknife) =
+    runScript $ do
+        (FreqSumHeader names counts, entries) <- readFreqSumStdIn
+        let entriesByChromosome = view (groupsBy (\fs1 fs2 -> fsChrom fs1 == fsChrom fs2)) entries
+            folder = (,) <$> buildPatternHist removeMissing removeTransitions maxM <*>
+                getNrSites removeMissing
+            patternHistAndLengthProd = purely folds folder entriesByChromosome
+        patternHistsAndLengths <- purely P.fold list patternHistAndLengthProd
+        let patternHists = map fst patternHistsAndLengths
+            nrSites = map snd patternHistsAndLengths
+            totalNrSites = sum nrSites
+            mergedHist = Map.unionsWith (+) patternHists
+        let jackknifeEstimatesDict =
+                if jackknife then
+                    let effChromLengths =
+                            [fromIntegral n / fromIntegral totalNrSites *
+                                fromIntegral nrCalledSites |n <- nrSites]
+                    in  Just . Map.fromList $ do
+                        key <- Map.keys mergedHist
+                        let countsPerChromosome = map (Map.findWithDefault 0 key) patternHists
+                            (jackknifeMean, jackknifeVar) =
+                                computeJackknife effChromLengths countsPerChromosome
+                        return (key, (jackknifeMean, jackknifeVar))
+                else Nothing
+        let hist = RareAlleleHistogram names counts 1 maxM [] [] nrCalledSites mergedHist
+                                       jackknifeEstimatesDict
+        outs <- tryRight $ showHistogram hist
+        scriptIO $ T.putStr outs
 
-    let hist = RareAlleleHistogram names counts 1 maxM [] [] nrCalledSites mergedHist
-                                   jackknifeEstimatesDict
-    outs <- tryRight $ showHistogram hist
-    scriptIO $ T.putStr outs
-
-buildPatternHist :: Bool -> Int -> Fold FreqSumEntry (Map.Map SitePattern Int64)
-buildPatternHist removeMissing maxM = Fold step Map.empty id
+buildPatternHist :: Bool -> Bool -> Int -> Fold FreqSumEntry (Map.Map SitePattern Int64)
+buildPatternHist removeMissing removeTransitions maxM = Fold step Map.empty id
   where
     step m fse =
         let pat = fsCounts fse
-        in  if removeMissing && any (==Nothing) pat then m
+        in  if (removeMissing && any (==Nothing) pat) ||
+               (removeTransitions && isTransition (fsRef fse) (fsAlt fse)) then m
             else
                 let newPat = map (maybe 0 id) pat
                 in  if sum newPat <= maxM then Map.insertWith (\_ v -> v + 1) newPat 1 m else m
+    isTransition r a = ((r == 'A') && (a == 'G')) || ((r == 'G') && (a == 'A')) ||
+                       ((r == 'C') && (a == 'T')) || ((r == 'T') && (a == 'C'))
 
 -- see F.M.T.A. Busing, E. Meijer, and R. van der Leeden. Delete-m jackknife for unequal
 -- Statistics and Computing, 9:3–8, 1999.
