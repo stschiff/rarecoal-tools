@@ -7,23 +7,27 @@ import Data.List.Utils (addToAL)
 import Data.Maybe (maybe)
 import qualified Data.Text as T
 import qualified Data.Vector as V
-import Debug.Trace (trace)
+-- import Debug.Trace (trace)
+import Data.Version (showVersion)
 import Pipes ((>->), runEffect)
 import qualified Pipes.Prelude as P
 import Prelude hiding (FilePath)
+import qualified Text.PrettyPrint.ANSI.Leijen as PT
 import Turtle
+import Paths_rarecoal_tools (version)
 
 data MyOpts = MyOpts (Either [GroupInput] FilePath) Double
 data GroupInput = GroupInput Text [Text]
 
+desc :: Description
+desc = Description $ PT.text ("groupFreqSum version " ++ showVersion version ++
+    ": group columns of a freqSum file into groups, summing up the allele counts")
+
 main :: IO ()
 main = do
-    MyOpts groupInput missingThreshold <-
-        options "group columns of a freqSum file into groups, summing up the allele counts" 
-            optParser
+    MyOpts groupInput missingThreshold <- options desc optParser
     groupDefinitions <- getGroupDefinitions groupInput
     runWithGroupDefinitions groupDefinitions missingThreshold
-    
     
 optParser :: Parser MyOpts
 optParser = MyOpts <$> (parseGroupInputByCommand <|> parseGroupInputByFile) <*> parseMissingness
@@ -76,8 +80,8 @@ parseGroupsFromFile fp' = fold (lineToText <$> input fp') groupFold
                     \'-', '_'."
     initial = []
     extract = id
-    linePattern = (,) <$> name <* space <*> name
-    name = plus (satisfy (\c -> isAlphaNum c || c == '_' || c == '-'))
+    linePattern = (,) <$> namePat <* space <*> namePat
+    namePat = plus (satisfy (\c -> isAlphaNum c || c == '_' || c == '-'))
 
 parseMissingness :: Parser Double
 parseMissingness = maybe 0.0 id <$> optional (optDouble "missingThreshold" 'm' "Sets the \

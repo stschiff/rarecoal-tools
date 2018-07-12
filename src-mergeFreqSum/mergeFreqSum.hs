@@ -9,10 +9,12 @@ import Control.Exception (AssertionFailed(..), throwIO)
 import Control.Monad (when)
 import Control.Monad.IO.Class (liftIO, MonadIO)
 import Data.Monoid ((<>))
+import Data.Version (showVersion)
 import qualified Options.Applicative as OP
 import Pipes ((>->), Pipe, runEffect, cat, for, yield)
 import Pipes.Safe (runSafeT)
 import Turtle (format, d, s, (%))
+import Paths_rarecoal_tools (version)
 
 data ConditionOn = C1 | C2 | Both | NoCondition deriving (Eq)
 
@@ -34,7 +36,8 @@ main = OP.execParser opts >>= runWithOptions
                     <*> OP.switch (OP.long "fillHomRef" <>
                         OP.help "treat sites that are missing in one file as hom-ref instead of \
                         \missing")
-    opts = OP.info (OP.helper <*> parser) (OP.progDesc "merge two freqSumFiles into one.")
+    opts = OP.info (OP.helper <*> parser) (OP.progDesc ("mergeFreqSum version " ++
+        showVersion version ++ ": a tool to merge two freqSumFiles into one."))
     readConditionOn :: String -> ConditionOn
     readConditionOn "1" = C1
     readConditionOn "2" = C2

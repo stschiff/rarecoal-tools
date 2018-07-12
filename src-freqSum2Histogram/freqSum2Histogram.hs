@@ -9,18 +9,21 @@ import Data.Maybe (maybe)
 import Data.Monoid ((<>))
 import qualified Data.Text.IO as T
 -- import Debug.Trace (trace)
+import Data.Version (showVersion)
 import Lens.Family2 (view)
 import qualified Options.Applicative as OP
 import Pipes.Group (groupsBy, folds)
 import qualified Pipes.Prelude as P
+import Paths_rarecoal_tools (version)
 
 data MyOpts = MyOpts Int Int64 Bool Bool Bool
 
 main :: IO ()
 main = OP.execParser opts >>= runWithOptions
   where
-    opts = OP.info (OP.helper <*> parser) (OP.progDesc "Tool to convert a freqSum file, read \
-    \from stdin, to to a histogram file as needed for rarecoal.")
+    opts = OP.info (OP.helper <*> parser) (OP.progDesc ("freqSum2Histogram version " ++
+        showVersion version ++ ": a tool to convert a freqSum file, read \
+        \from stdin, to to a histogram file as needed for rarecoal."))
 
 parser :: OP.Parser MyOpts
 parser = MyOpts <$> OP.option OP.auto (OP.long "maxM"

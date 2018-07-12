@@ -6,19 +6,22 @@ import SequenceFormats.FreqSum (FreqSumHeader(..), FreqSumEntry(..), readFreqSum
 import Control.Error (runScript, tryAssert, scriptIO, Script, tryJust)
 import Data.Monoid ((<>))
 import Data.Text (pack)
+import Data.Version (showVersion)
 import qualified Options.Applicative as OP
 import Pipes ((>->), runEffect)
 import qualified Pipes.Prelude as P
 import System.Random (randomIO)
+import Paths_rarecoal_tools (version)
 
 data MyOpts = MyOpts String Int
 
 main :: IO ()
 main = OP.execParser opts >>= runWithOptions
   where
-    opts = OP.info (OP.helper <*> parser) (OP.progDesc "Tool for downsampling a freqSum file. If \
-                    \-> expressiona column is -1, the downsampled column will also have -1. \
-                    \Reads from stdin")
+    opts = OP.info (OP.helper <*> parser) (OP.progDesc ("downSampleFreqSum version " ++
+        showVersion version ++ ": A tool for downsampling a freqSum file. If \
+        \a column is -1, the downsampled column will also have -1. \
+        \Reads from stdin"))
 
 parser :: OP.Parser MyOpts
 parser = MyOpts <$> OP.strArgument (OP.metavar "<NAME>" <> OP.help "the name of the population \

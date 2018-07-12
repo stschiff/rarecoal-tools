@@ -13,20 +13,23 @@ import qualified Data.Map.Strict as M
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import qualified Data.Text.IO as T
+import Data.Version (showVersion)
 import qualified Options.Applicative as OP
 import Pipes (yield, for, Producer)
 import qualified Pipes.Prelude as P
 import System.IO (stdin, IOMode(..), openFile)
 import System.Random (randomIO)
 import Turtle (format, (%), s, w)
+import Paths_rarecoal_tools (version)
 
 data MyOpts = MyOpts Text Int FilePath
 
 main :: IO ()
 main = OP.execParser opts >>= runWithOptions
   where
-    opts = OP.info (OP.helper <*> parser) (OP.progDesc "sample a number of haplotypes \
-                                \(independently at each site) from a population in a histogram")
+    opts = OP.info (OP.helper <*> parser) (OP.progDesc ("sampleHist version " ++
+        showVersion version ++ ": a tool to sample a number of haplotypes (independently at each \
+        \site) from a population in a histogram"))
 
 parser :: OP.Parser MyOpts
 parser = MyOpts <$> OP.strOption (OP.short 'n' <> OP.long "name" <>

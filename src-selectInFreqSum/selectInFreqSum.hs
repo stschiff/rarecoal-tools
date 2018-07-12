@@ -5,21 +5,22 @@ import SequenceFormats.FreqSum (FreqSumEntry(..), FreqSumHeader(..), readFreqSum
 
 import Control.Error (runScript, tryJust)
 import Data.List.Split (splitOn)
-import Data.Maybe (catMaybes)
 import Data.Monoid ((<>))
 import Data.Text (pack)
+import Data.Version (showVersion)
 import qualified Options.Applicative as OP
 import Pipes ((>->), runEffect)
 import qualified Pipes.Prelude as P
 import Turtle (format, s, (%))
+import Paths_rarecoal_tools (version)
 
 data MyOpts = MyOpts [String]
 
 main :: IO ()
 main = OP.execParser opts >>= runWithOptions
   where
-    opts = OP.info (OP.helper <*> parser) (OP.progDesc "Selects columns from a freqSum file, \
-                                           \read from stdin")
+    opts = OP.info (OP.helper <*> parser) (OP.progDesc ("selectInFreqSum version " ++
+        showVersion version ++ ": a tool to select columns from a freqSum file, read from stdin"))
 
 parser :: OP.Parser MyOpts
 parser = MyOpts <$>

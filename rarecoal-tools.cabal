@@ -2,7 +2,7 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 name:                rarecoal-tools
-version:             1.2.6
+version:             1.2.7
 license:             GPL-3
 license-file:        LICENSE
 author:              Stephan Schiffels
@@ -22,15 +22,16 @@ executable vcf2FreqSum
                        pipes-attoparsec,
                        pipes-text,
                        transformers,
-                       turtle	
+                       turtle,
+                       ansi-wl-pprint
+  other-modules:       Paths_rarecoal_tools
   default-language:    Haskell2010
 
 executable groupFreqSum
   main-is:             groupFreqSum.hs
   hs-source-dirs:      src-groupFreqSum
-  build-depends:       base, sequence-formats,
-                       pipes, text,
-                       turtle, MissingH, vector
+  build-depends:       base, sequence-formats, pipes, text, turtle, MissingH, vector, ansi-wl-pprint
+  other-modules:       Paths_rarecoal_tools
   default-language:    Haskell2010
 
 executable selectInFreqSum
@@ -42,6 +43,7 @@ executable selectInFreqSum
                        pipes,
                        pipes-attoparsec,
                        errors, split, text, turtle
+  other-modules:       Paths_rarecoal_tools
   default-language:    Haskell2010
 
 executable sampleHist
@@ -58,6 +60,7 @@ executable sampleHist
                        random,
                        text,
                        turtle
+  other-modules:       Paths_rarecoal_tools
   default-language:    Haskell2010
  -- ghc-options:         "-with-rtsopts=-A10m -K100m"
 
@@ -71,6 +74,7 @@ executable downSampleFreqSum
                        pipes-attoparsec,
                        errors, text, 
                        random
+  other-modules:       Paths_rarecoal_tools
   default-language:    Haskell2010
 
 executable mergeFreqSum
@@ -85,7 +89,7 @@ executable mergeFreqSum
                        errors,
                        turtle,
                        text
-  other-modules:       OrderedZip
+  other-modules:       OrderedZip, Paths_rarecoal_tools
   default-language:    Haskell2010
 
 executable freqSum2Histogram
@@ -102,13 +106,15 @@ executable freqSum2Histogram
                        foldl,
                        lens-family,
                        pipes-group
+  other-modules:       Paths_rarecoal_tools
   default-language:    Haskell2010
 
 executable combineHistograms
   main-is:             combineHistograms.hs
   hs-source-dirs:      src-combineHistograms
-  build-depends:       base, sequence-formats, errors, text, optparse-applicative, pipes-text, pipes,
-                       pipes-attoparsec, errors, random, containers
+  build-depends:       base, sequence-formats, errors, text, optparse-applicative,
+                       pipes-text, pipes, pipes-attoparsec, errors, random, containers
+  other-modules:       Paths_rarecoal_tools
   default-language:    Haskell2010
 
 executable concatFreqSum
@@ -116,6 +122,7 @@ executable concatFreqSum
   hs-source-dirs:       src-concatFreqSum
   build-depends:        base, pipes, transformers, optparse-applicative, sequence-formats, errors,
                         managed, pipes-safe, exceptions
+  other-modules:        Paths_rarecoal_tools
   default-language:     Haskell2010
 
 executable filterFreqSum
@@ -123,11 +130,14 @@ executable filterFreqSum
   hs-source-dirs:       src-filterFreqSum, src-mergeFreqSum
   build-depends:        base, pipes, optparse-applicative, sequence-formats, errors, pipes-text,
                         turtle, attoparsec, pipes-attoparsec, transformers, text, zlib, bytestring,
-                        pipes-safe
+                        pipes-safe, ansi-wl-pprint
+  other-modules:        Paths_rarecoal_tools
   default-language:     Haskell2010
 
 executable eigenstrat2FreqSum
   main-is:              eigenstrat2FreqSum.hs
   hs-source-dirs:       src-eigenstrat2FreqSum
-  build-depends:        base, pipes, sequence-formats, pipes-safe, turtle, vector, text
+  build-depends:        base, pipes, sequence-formats, pipes-safe, turtle, vector, text, 
+                        ansi-wl-pprint
+  other-modules:        Paths_rarecoal_tools
   default-language:     Haskell2010

@@ -3,16 +3,18 @@ import SequenceFormats.RareAlleleHistogram (RareAlleleHistogram(..), showHistogr
 import Control.Monad (foldM, when)
 import Control.Error (scriptIO, runScript, Script, tryRight, throwE, errLn)
 import qualified Data.Text.IO as T
+import Data.Version (showVersion)
 import qualified Data.Map.Strict as Map
-import qualified Options.Applicative as OP
 import Data.Monoid ((<>))
+import qualified Options.Applicative as OP
+import Paths_rarecoal_tools (version)
 
 main :: IO ()
 main = OP.execParser parser >>= runWithOptions
   where
     parser = OP.info (OP.helper <*> OP.some parseFileName)
-        (OP.fullDesc <> OP.progDesc "Tool to combine multiple histogram files, for help add \
-            \option -h")
+        (OP.fullDesc <> OP.progDesc ("combineHistograms Version " ++ showVersion version ++
+            ": A tool to combine multiple histogram files, for help add option -h"))
     parseFileName =
         OP.strArgument $ OP.metavar "histogram_file" <> OP.help "histogram file, put as many as \
             \you want to add up"

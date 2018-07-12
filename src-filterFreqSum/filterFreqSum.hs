@@ -10,13 +10,16 @@ import Data.Char (isSpace)
 import Data.Text (unpack, Text)
 import qualified Data.Attoparsec.Text as A
 -- import Debug.Trace (trace)
+import Data.Version (showVersion)
 import Pipes (Producer, runEffect, yield, (>->), next, cat)
 import Pipes.Attoparsec (parsed)
 import qualified Pipes.Prelude as P
 import Pipes.Safe (runSafeT)
 import qualified Pipes.Text.IO as PT
 import Prelude hiding (FilePath)
+import qualified Text.PrettyPrint.ANSI.Leijen as PT
 import Turtle hiding (stdin, cat)
+import Paths_rarecoal_tools (version)
 
 type BedEntry = (Chrom, Int, Int)
 data IntervalStatus = BedBehind | FSwithin | BedAhead
@@ -28,10 +31,14 @@ argParser = (,,) <$>
     optional (optText "sampleMissingness" 's' "an optional sample name to condition on having \
         \no missingness")
 
+desc :: Description
+desc = Description $ PT.text ("filterFreqSum version " ++ showVersion version ++
+    ": a program to filter freqSum files.")
+
 main :: IO ()
 main = runSafeT $ do
     (maybeBedFile, maybeMissingness, maybeSampleMissingness) <-
-        options "script to filter a freqSum file" argParser
+        options desc argParser
     (fsHeader, fsBody) <- readFreqSumStdIn
     let fsProd = case maybeBedFile of
             Nothing -> fsBody
@@ -44,8 +51,8 @@ main = runSafeT $ do
             Just m -> P.filter (missingnessFilter m (fshCounts fsHeader))
     let sampleMissingnessFilterPipe = case maybeSampleMissingness of
             Nothing -> cat
-            Just s ->
-                let samplePos = fst . head . filter ((==s) . snd) . zip [0..] . fshNames $ fsHeader
+            Just s' ->
+                let samplePos = fst . head . filter ((==s') . snd) . zip [0..] . fshNames $ fsHeader
                 in  P.filter (sampleMissingnessFilter samplePos)
     runEffect $ fsProd >-> missingnessFilterPipe >-> sampleMissingnessFilterPipe >-> 
         printFreqSumStdOut fsHeader

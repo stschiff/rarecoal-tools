@@ -6,14 +6,20 @@ import SequenceFormats.Utils (Chrom(..))
 
 import Data.IORef (newIORef, readIORef, writeIORef, IORef)
 import qualified Data.Text as T
+import Data.Version (showVersion)
 import Pipes (Pipe, runEffect, (>->), cat, for, yield)
 import qualified Pipes.Prelude as P
+import qualified Text.PrettyPrint.ANSI.Leijen as PT
 import Turtle hiding (cat, e)
+import Paths_rarecoal_tools (version)
+
+desc :: Description
+desc = Description $ PT.text ("vcf2FreqSum version " ++ showVersion version ++
+    ": a program to convert a multi-sample VCF, read from stdin, into a freqSum file")
 
 main :: IO ()
 main = do
-    maybeNames <- options "convert a multi-sample VCF, read from stdin, into a freqSum file" 
-        optParser
+    maybeNames <- options desc optParser
     run maybeNames
 
 optParser :: Parser (Maybe [Text])
