@@ -2,7 +2,7 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 name:                rarecoal-tools
-version:             1.2.7
+version:             1.2.8
 license:             GPL-3
 license-file:        LICENSE
 author:              Stephan Schiffels

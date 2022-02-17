@@ -1,9 +1,6 @@
-flags: {}
-packages:
-- location: .
-- location:
-    git: https://github.com/stschiff/sequence-formats.git
-    commit: a01c7fb3d5c2cfbcb45830e8f05a4331867cbe69
-  extra-dep: true
-extra-deps: []
 resolver: lts-10.5
+packages:
+- .
+extra-deps:
+- git: https://github.com/stschiff/sequence-formats.git
+  commit: a01c7fb3d5c2cfbcb45830e8f05a4331867cbe69
