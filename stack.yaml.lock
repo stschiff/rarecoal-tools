@@ -5,19 +5,22 @@
 
 packages:
 - completed:
-    name: sequence-formats
-    version: 1.1.4
-    git: https://github.com/stschiff/sequence-formats.git
+    hackage: MissingH-1.5.0.0@sha256:34df0817c543894b53942852109da1ba7f3f615ca0aded9b9c58bf52d33017e8,4740
     pantry-tree:
-      size: 646
-      sha256: 975b2700e85cb563f51080e0303bf73c295316356b58f7672234e5b0bb20aa9c
-    commit: a01c7fb3d5c2cfbcb45830e8f05a4331867cbe69
+      size: 5272
+      sha256: e651ec6ac04238ae27e645f5c8316459999bed57c388c459a44c21c58525fba7
   original:
-    git: https://github.com/stschiff/sequence-formats.git
-    commit: a01c7fb3d5c2cfbcb45830e8f05a4331867cbe69
+    hackage: MissingH-1.5.0.0
+- completed:
+    hackage: pipes-text-1.0.0@sha256:0e5201cd499edbcbfb32bec59279938039a094b246c41d2c49c27288509a3e28,3146
+    pantry-tree:
+      size: 555
+      sha256: 2e1f4cd9d6ba296a09b31111a122f1d57392ad8b79251243dbe1915096a63a4b
+  original:
+    hackage: pipes-text-1.0.0
 snapshots:
 - completed:
-    size: 568655
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/10/5.yaml
-    sha256: d5d2a8f55085643b41a30e9191cbbd4f8f707dd63facdddfbce08d811f808444
-  original: lts-10.5
+    size: 585392
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/18/1.yaml
+    sha256: 4e4c5e435a2f1c6f3c650f282db0f387f806406ed4fe6ef1aa4e6add9035d065
+  original: lts-18.1
