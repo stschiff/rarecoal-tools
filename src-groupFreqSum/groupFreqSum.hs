@@ -4,7 +4,6 @@ import SequenceFormats.FreqSum (FreqSumEntry(..), readFreqSumStdIn, FreqSumHeade
 
 import Data.Char (isAlphaNum)
 import Data.List.Utils (addToAL)
-import Data.Maybe (maybe)
 import qualified Data.Text as T
 import qualified Data.Vector as V
 -- import Debug.Trace (trace)
@@ -97,18 +96,18 @@ runWithGroupDefinitions groups missingThreshold = do
             let namesWithIndices = zip names [0..]
             (groupName, groupSamples) <- groups
             let sampleIndices = do
-                    sampleName <- groupSamples
+                    sampleName <- map T.unpack groupSamples
                     case sampleName `lookup` namesWithIndices of
                         Just i -> return i
                         Nothing -> error $ "could not find sample name " ++ show sampleName
-            return (groupName, sampleIndices)
+            return (T.unpack groupName, sampleIndices)
     let newSizes = do
             (_, sampleIndices) <- groupsWithIndices
             return . sum . map (sizes!!) $ sampleIndices
     let newEntries = entries >-> P.map (groupFreqSum groupsWithIndices missingThreshold sizes)
-    runEffect $ newEntries >-> printFreqSumStdOut (FreqSumHeader (map fst groups) newSizes)
+    runEffect $ newEntries >-> printFreqSumStdOut (FreqSumHeader (map (T.unpack . fst) groups) newSizes)
 
-groupFreqSum :: [(Text, [Int])] -> Double -> [Int] -> FreqSumEntry -> FreqSumEntry
+groupFreqSum :: [(String, [Int])] -> Double -> [Int] -> FreqSumEntry -> FreqSumEntry
 groupFreqSum groupsWithIndices missingThreshold sizes fs =
     let alleleCountsVec = V.fromList $ zip (fsCounts fs) sizes
         newCounts = do

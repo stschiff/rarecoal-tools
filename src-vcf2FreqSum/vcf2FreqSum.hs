@@ -33,7 +33,7 @@ run maybeNames = do
         Nothing -> return names
         Just names' -> do
             when (length names' /= length names) $ error "nr of given names must match names in VCF"
-            return names'
+            return (map T.unpack names')
     let fsHeader = FreqSumHeader newNames (replicate (length newNames) 2)
     lastPos <- newIORef (Chrom "", 0)
     runEffect $ vcfProd >-> processVCFentry >-> P.filterM (removeDuplicatePositions lastPos) >->
@@ -47,7 +47,7 @@ processVCFentry = for cat $ \vcfEntry -> do
         Right a -> yield a
 
 removeDuplicatePositions :: IORef (Chrom, Int) -> FreqSumEntry -> IO Bool
-removeDuplicatePositions lastPos (FreqSumEntry chrom pos _ _ _) = do
+removeDuplicatePositions lastPos (FreqSumEntry chrom pos _ _ _ _ _) = do
     (chrom', pos') <- readIORef lastPos
     let ret = if chrom' == chrom && pos' == pos then False else True
     writeIORef lastPos (chrom, pos)

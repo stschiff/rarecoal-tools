@@ -1,11 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
-import SequenceFormats.RareAlleleHistogram (RareAlleleHistogram(..), showHistogram, readHistogram)
+import SequenceFormats.RareAlleleHistogram (RareAlleleHistogram(..), writeHistogramStdOut, readHistogram)
 import Control.Monad (foldM, when)
-import Control.Error (scriptIO, runScript, Script, tryRight, throwE, errLn)
-import qualified Data.Text.IO as T
+import Control.Error (scriptIO, runScript, Script, throwE, errLn)
 import Data.Version (showVersion)
+
 import qualified Data.Map.Strict as Map
-import Data.Monoid ((<>))
 import qualified Options.Applicative as OP
 import Paths_rarecoal_tools (version)
 
@@ -22,8 +21,7 @@ main = OP.execParser parser >>= runWithOptions
 runWithOptions :: [FilePath] -> IO ()
 runWithOptions fileNames = runScript $ do
     newHist <- combine fileNames
-    outs <- tryRight $ showHistogram newHist
-    scriptIO $ T.putStr outs
+    scriptIO $ writeHistogramStdOut newHist
 
 combine :: [FilePath] -> Script RareAlleleHistogram
 combine filenames = do

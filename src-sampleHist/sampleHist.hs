@@ -1,18 +1,16 @@
 {-# LANGUAGE BangPatterns, OverloadedStrings #-}
 
-import SequenceFormats.RareAlleleHistogram (readHistogramFromHandle, showHistogram,
+import SequenceFormats.RareAlleleHistogram (readHistogramFromHandle, writeHistogramStdOut,
                                      RareAlleleHistogram(..), SitePattern)
 
-import Control.Error (runScript, tryRight, errLn, scriptIO, Script, tryJust)
+import Control.Error (runScript, errLn, scriptIO, Script, tryJust)
 import Control.Foldl (impurely, FoldM(..))
 import Control.Lens ((&), (%~), ix)
 import Control.Monad (replicateM_, when)
 import Control.Monad.Trans.Class (lift)
 import Data.Int (Int64)
 import qualified Data.Map.Strict as M
-import Data.Monoid ((<>))
-import Data.Text (Text)
-import qualified Data.Text.IO as T
+import Data.Text (Text, unpack)
 import Data.Version (showVersion)
 import qualified Options.Applicative as OP
 import Pipes (yield, for, Producer)
@@ -46,12 +44,11 @@ runWithOptions (MyOpts name howMany histPath) = runScript $ do
     handle <- if histPath == "-" then return stdin else scriptIO $ openFile histPath ReadMode
     hist <- readHistogramFromHandle handle
     hist' <- makeNewHist name howMany hist
-    outs <- tryRight $ showHistogram hist'
-    scriptIO $ T.putStr outs
+    scriptIO $ writeHistogramStdOut hist'
 
 makeNewHist :: Text -> Int -> RareAlleleHistogram -> Script RareAlleleHistogram
 makeNewHist name howMany hist = do
-    queryIndex <- tryJust (format ("could not find name: "%s) name) $ lookup name (zip (raNames hist) [0..])
+    queryIndex <- tryJust (format ("could not find name: "%s) name) $ lookup (unpack name) (zip (raNames hist) [0..])
     when (raJackknifeEstimates hist /= Nothing) $ do
         scriptIO $ errLn "handling histograms with jackknife estimates is not yet implemented."
     let histRows = M.toList (raCounts hist)

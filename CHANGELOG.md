@@ -1,1 +1,2 @@
-V 1.2.8: Updated stack file to new format.
+- V 1.2.9: Updated to stackage to lts-18.1
+- V 1.2.8: Updated stack file to new format.

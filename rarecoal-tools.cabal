@@ -2,7 +2,7 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 name:                rarecoal-tools
-version:             1.2.8
+version:             1.2.9
 license:             GPL-3
 license-file:        LICENSE
 author:              Stephan Schiffels
@@ -11,10 +11,15 @@ category:            Bioinformatics
 build-type:          Simple
 cabal-version:       >=1.10
 
+library rarecoaltools
+  hs-source-dirs:      src
+  exposed-modules:     Utils
+  build-depends:       base
+
 executable vcf2FreqSum
   main-is:             vcf2FreqSum.hs
   hs-source-dirs:      src-vcf2FreqSum
-  build-depends:       base, sequence-formats,
+  build-depends:       base, sequence-formats, 
                        text, 
                        errors,
                        attoparsec,
@@ -37,7 +42,7 @@ executable groupFreqSum
 executable selectInFreqSum
   main-is:             selectInFreqSum.hs
   hs-source-dirs:      src-selectInFreqSum
-  build-depends:       base, sequence-formats,
+  build-depends:       base, sequence-formats, rarecoaltools,
                        optparse-applicative,
                        pipes-text,
                        pipes,
@@ -130,7 +135,7 @@ executable filterFreqSum
   hs-source-dirs:       src-filterFreqSum, src-mergeFreqSum
   build-depends:        base, pipes, optparse-applicative, sequence-formats, errors, pipes-text,
                         turtle, attoparsec, pipes-attoparsec, transformers, text, zlib, bytestring,
-                        pipes-safe, ansi-wl-pprint
+                        pipes-safe, ansi-wl-pprint, pipes-bytestring
   other-modules:        Paths_rarecoal_tools
   default-language:     Haskell2010
 

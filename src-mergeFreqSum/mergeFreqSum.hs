@@ -2,18 +2,16 @@
 import OrderedZip (orderedZip)
 import SequenceFormats.FreqSum (FreqSumEntry(..), FreqSumHeader(..), readFreqSumStdIn, 
     readFreqSumFile, printFreqSumStdOut)
-import SequenceFormats.Utils (Chrom(..))
 
 import Control.Error (errLn)
 import Control.Exception (AssertionFailed(..), throwIO)
 import Control.Monad (when)
 import Control.Monad.IO.Class (liftIO, MonadIO)
-import Data.Monoid ((<>))
 import Data.Version (showVersion)
 import qualified Options.Applicative as OP
 import Pipes ((>->), Pipe, runEffect, cat, for, yield)
 import Pipes.Safe (runSafeT)
-import Turtle (format, d, s, (%))
+import Turtle (format, d, (%), w)
 import Paths_rarecoal_tools (version)
 
 data ConditionOn = C1 | C2 | Both | NoCondition deriving (Eq)
@@ -70,8 +68,8 @@ freqSumCombine counts1 counts2 cond fillHomRef = for cat $ \nextPair -> do
             when (cond /= C1 && cond /= Both) . yield $
                 fs2 {fsCounts = replicate n1 filler ++ fsCounts fs2}
         (Just fs1, Just fs2) -> do
-            let FreqSumEntry chrom pos r1 a1 freqs1 = fs1
-                FreqSumEntry _ _ r2 a2 freqs2 = fs2
+            let FreqSumEntry chrom pos _ _ r1 a1 freqs1 = fs1
+                FreqSumEntry _ _ _ _ r2 a2 freqs2 = fs2
             if r1 == r2 && (a1 == a2 || a1 == '.' || a2 == '.')
             then do
                 let altAllele = if a1 == '.' then a2 else a1
@@ -79,12 +77,11 @@ freqSumCombine counts1 counts2 cond fillHomRef = for cat $ \nextPair -> do
             else
                 if r1 == a2 && a1 == r2 then do
                     liftIO . errLn $
-                        format ("flipping alleles in position "%s%":"%d) (unChrom chrom) pos
+                        format ("flipping alleles in position "%w%":"%d) chrom pos
                     yield $ fs1 {fsCounts = freqs1 ++ flipAlleles counts2 freqs2}
                 else do
                     liftIO . errLn $
-                        format ("position "%s%":"%d%" has inconsistent alleles. Skipping")
-                            (unChrom chrom) pos
+                        format ("position "%w%":"%d%" has inconsistent alleles. Skipping") chrom pos
         (Nothing, Nothing) -> liftIO . throwIO $ AssertionFailed "freqSumCombine: should not happen"
 
 flipAlleles :: [Int] -> [Maybe Int] -> [Maybe Int]

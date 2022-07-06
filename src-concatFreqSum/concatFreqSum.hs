@@ -4,7 +4,6 @@ import SequenceFormats.FreqSum (readFreqSumFile, printFreqSumStdOut)
 import Control.Exception (AssertionFailed(..))
 import Control.Monad (when)
 import Control.Monad.Catch (throwM)
-import Data.Monoid ((<>))
 import Data.Version (showVersion)
 import qualified Options.Applicative as OP
 import Pipes (runEffect, (>->))

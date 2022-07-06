@@ -4,19 +4,20 @@ import SequenceFormats.FreqSum (FreqSumEntry(..), readFreqSumStdIn, printFreqSum
     FreqSumHeader(..))
 import SequenceFormats.Utils (liftParsingErrors, Chrom(..))
 
-import Control.Applicative (optional)
 import Control.Monad.Trans.Class (lift)
 import Data.Char (isSpace)
-import Data.Text (unpack, Text)
-import qualified Data.Attoparsec.Text as A
+import Data.Text (unpack)
+import qualified Data.Attoparsec.ByteString.Char8 as A
 -- import Debug.Trace (trace)
 import Data.Version (showVersion)
 import Pipes (Producer, runEffect, yield, (>->), next, cat)
 import Pipes.Attoparsec (parsed)
 import qualified Pipes.Prelude as P
 import Pipes.Safe (runSafeT)
-import qualified Pipes.Text.IO as PT
+import Pipes.Safe.Prelude (withFile)
+import qualified Pipes.ByteString as PB
 import Prelude hiding (FilePath)
+import System.IO (IOMode(..))
 import qualified Text.PrettyPrint.ANSI.Leijen as PT
 import Turtle hiding (stdin, cat)
 import Paths_rarecoal_tools (version)
@@ -43,7 +44,7 @@ main = runSafeT $ do
     let fsProd = case maybeBedFile of
             Nothing -> fsBody
             Just bedFile ->
-                let textProd = PT.readFile . unpack . format fp $ bedFile
+                let textProd = withFile (unpack . format fp $ bedFile) ReadMode (\h -> PB.fromHandle h)
                     bedProd = parsed bedFileParser textProd >>= liftParsingErrors
                 in  filterThroughBed bedProd fsBody
     let missingnessFilterPipe = case maybeMissingness of
@@ -52,7 +53,7 @@ main = runSafeT $ do
     let sampleMissingnessFilterPipe = case maybeSampleMissingness of
             Nothing -> cat
             Just s' ->
-                let samplePos = fst . head . filter ((==s') . snd) . zip [0..] . fshNames $ fsHeader
+                let samplePos = fst . head . filter ((==(unpack s')) . snd) . zip [0..] . fshNames $ fsHeader
                 in  P.filter (sampleMissingnessFilter samplePos)
     runEffect $ fsProd >-> missingnessFilterPipe >-> sampleMissingnessFilterPipe >-> 
         printFreqSumStdOut fsHeader
@@ -99,7 +100,7 @@ sampleMissingnessFilter filterPos fs = (fsCounts fs) !! filterPos /= Nothing
     
 
 checkIntervalStatus :: BedEntry -> FreqSumEntry -> IntervalStatus
-checkIntervalStatus (bedChrom, bedStart, bedEnd) (FreqSumEntry fsChrom' fsPos' _ _ _) =
+checkIntervalStatus (bedChrom, bedStart, bedEnd) (FreqSumEntry fsChrom' fsPos' _ _ _ _ _) =
     case bedChrom `compare` fsChrom' of
         LT -> BedBehind
         GT -> BedAhead

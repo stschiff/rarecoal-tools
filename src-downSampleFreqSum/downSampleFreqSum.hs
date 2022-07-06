@@ -4,8 +4,6 @@ import SequenceFormats.FreqSum (FreqSumHeader(..), FreqSumEntry(..), readFreqSum
     printFreqSumStdOut)
 
 import Control.Error (runScript, tryAssert, scriptIO, Script, tryJust)
-import Data.Monoid ((<>))
-import Data.Text (pack)
 import Data.Version (showVersion)
 import qualified Options.Applicative as OP
 import Pipes ((>->), runEffect)
@@ -32,7 +30,7 @@ parser = MyOpts <$> OP.strArgument (OP.metavar "<NAME>" <> OP.help "the name of 
 runWithOptions :: MyOpts -> IO ()
 runWithOptions (MyOpts name nAfter) = runScript $ do
     (FreqSumHeader names counts, entries) <- readFreqSumStdIn
-    index <- tryJust "did not find name" $ (pack name) `lookup` zip names [0..]
+    index <- tryJust "did not find name" $ name `lookup` zip names [0..]
     let nBefore = counts !! index
     tryAssert "nBefore has to be >= nAfter" $ nBefore >= nAfter
     let newEntries = entries >-> P.mapM (downSample index nBefore nAfter)

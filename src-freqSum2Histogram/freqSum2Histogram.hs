@@ -1,13 +1,10 @@
 import SequenceFormats.FreqSum (FreqSumEntry(..), readFreqSumStdIn, FreqSumHeader(..))
-import SequenceFormats.RareAlleleHistogram (RareAlleleHistogram(..), SitePattern, showHistogram)
+import SequenceFormats.RareAlleleHistogram (RareAlleleHistogram(..), SitePattern, writeHistogramStdOut)
 
-import Control.Error (scriptIO, runScript, tryRight)
+import Control.Error (scriptIO, runScript)
 import Control.Foldl (purely, Fold(..), list)
 import Data.Int (Int64)
 import qualified Data.Map.Strict as Map
-import Data.Maybe (maybe)
-import Data.Monoid ((<>))
-import qualified Data.Text.IO as T
 -- import Debug.Trace (trace)
 import Data.Version (showVersion)
 import Lens.Family2 (view)
@@ -77,8 +74,7 @@ runWithOptions (MyOpts maxM nrCalledSites removeMissing removeTransitions jackkn
                 else Nothing
         let hist = RareAlleleHistogram names counts 1 maxM [] [] nrCalledSites mergedHist
                                        jackknifeEstimatesDict
-        outs <- tryRight $ showHistogram hist
-        scriptIO $ T.putStr outs
+        scriptIO $ writeHistogramStdOut hist
 
 buildPatternHist :: Bool -> Bool -> Int -> Fold FreqSumEntry (Map.Map SitePattern Int64)
 buildPatternHist removeMissing removeTransitions maxM = Fold step Map.empty id

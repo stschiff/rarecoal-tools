@@ -30,8 +30,8 @@ main = do
         runEffect $ prod >-> P.map convertToFreqSum >-> printFreqSumStdOut fsh
 
 convertToFreqSum :: (EigenstratSnpEntry, GenoLine) -> FreqSumEntry
-convertToFreqSum (EigenstratSnpEntry chrom pos ref alt, genoLine) =
-    FreqSumEntry chrom pos ref alt counts
+convertToFreqSum (EigenstratSnpEntry chrom pos genPos sid ref alt, genoLine) =
+    FreqSumEntry chrom pos (Just sid) (Just genPos) ref alt counts
   where
     counts = map makeCounts . toList $ genoLine
     makeCounts HomRef = Just 0
